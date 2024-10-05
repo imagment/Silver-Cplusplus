@@ -2,7 +2,6 @@
 #include <iostream>
 #include <thread>
 #include <vector>
-#include <mutex>
 #include <string>
 #include <cmath>
 #include <cstdio>
@@ -33,9 +32,7 @@
 #define WORLD_DEPTH 51
 #define BUFFER_SIZE 5000
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+
 #define MAX_TOKEN_SIZE 1000
 
 
@@ -62,18 +59,12 @@ int WorldX = 20, WorldY = 20;
 int cursorPositionX = 0;
 int cursorPositionY = 0;
 
-int CameraX = 0, CameraY = 0, CameraZ = 10, CameraScaleX = 10, CameraScaleY = 10, CameraScaleZ=20;
-
-int cameraRotation = 0;
-int isFlippedHorizontal = 1; 
-int isFlippedVertical = 1;  
-int cellSize = 2;
 
 Silver silver;
 
 
 void Silver::Camera::cell(int c){
-	cellSize=c;
+	silver.camera.cellSize=c;
 }
 
 void Silver::Camera::configCameraException(string o, string n){
@@ -82,7 +73,7 @@ void Silver::Camera::configCameraException(string o, string n){
 }
 
 
-char Silver::Keyboard::detectedKey() {
+char Silver::Keyboard::getKey() {
     struct termios oldt, newt;
     int ch;
     int oldf;
@@ -109,48 +100,16 @@ char Silver::Keyboard::detectedKey() {
     // If a key is pressed, return the key without echoing it to the console
     if (ch != EOF) {
     	if(ch>='a' && ch<='z') ch+='A'-'a';
+    	keyBuffer=ch;
         return ch;  // Return detected key
     }
-
+    keyBuffer='\0';
     return '\0'; // Return null character if no key was pressed
 }
 
 
-char keyBuffer='\0';
-void Silver::Keyboard::detectKey() {
-    struct termios oldt, newt;
-    int ch;
-    int oldf;
 
-    // Get current terminal settings
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
 
-    // Disable canonical mode and echo
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
-    // Set non-blocking mode for input
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-    // Check for key press
-    ch = getchar();
-
-    // Restore original terminal settings after checking for key
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf);
-
-    // If a key is pressed, return the key without echoing it to the console
-    if (ch != EOF) {
-    	if(ch>='a' && ch<='z') ch+='A'-'a';
-        keyBuffer=ch;
-        return;
-    }
-
-    keyBuffer='\0';
-    
-}
 
 
 bool Silver::Keyboard::isKey(char key) {
@@ -334,39 +293,33 @@ void Silver::drawCircleHollow(Vec3 center, int radius, string c) {
 
 
 void Silver::Camera::setCam3(Vec3 pos, Vec3 scale) {
-    CameraX = pos.x;
-    CameraY = pos.y;
-    CameraZ = pos.z;
-    CameraScaleX = scale.x;
-    CameraScaleY = scale.y;
-    if(scale.z!=0) CameraScaleZ = scale.z;
+    silver.camera.CameraPos=pos;
+    silver.camera.CameraScale=scale;
 }
 
 void Silver::Camera::setCam2(Vec3 pos, Vec3 scale) {
-    CameraX = pos.x;
-    CameraY = pos.y;
-    CameraScaleX = scale.x;
-    CameraScaleY = scale.y;
+    silver.camera.CameraPos={pos.x,pos.y,silver.camera.CameraPos.z};
+    silver.camera.CameraScale={pos.x,pos.y,silver.camera.CameraScale.z};
 }
 
 
 void Silver::Camera::photo() {
-    float radians = cameraRotation * (M_PI / 180.0);
+    float radians = silver.camera.cameraRotation * (M_PI / 180.0);
     float cosTheta = cos(radians);
     float sinTheta = sin(radians);
 
-    for (int j = 0; j < CameraScaleY; ++j) {
-        for (int i = 0; i < CameraScaleX; ++i) {
+    for (int j = 0; j < silver.camera.CameraScale.y; ++j) {
+        for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
             bool flag = true;
             mesh s;
 
-            int dx = i - CameraScaleX / 2;
-            int dy = j - CameraScaleY / 2;
+            int dx = i - silver.camera.CameraScale.x / 2;
+            int dy = j - silver.camera.CameraScale.y / 2;
 
-            int rotatedX = round(cosTheta * dx + sinTheta * dy + CameraX);
-            int rotatedY = round(-sinTheta * dx + cosTheta * dy + CameraY);
+            int rotatedX = round(cosTheta * dx + sinTheta * dy + silver.camera.CameraPos.x);
+            int rotatedY = round(-sinTheta * dx + cosTheta * dy + silver.camera.CameraPos.y);
 
-            if (isFlippedHorizontal == -1) {
+            if (silver.camera.isFlippedHorizonal == -1) {
                 rotatedX = WorldX - rotatedX - 1;
             }
             if (isFlippedVertical == -1) {
@@ -375,7 +328,7 @@ void Silver::Camera::photo() {
 
             
 		bool spriteFound = false;
-		for (int z = CameraZ+CameraScaleZ/2-1; z >= CameraZ+(-CameraScaleZ+CameraScaleZ/2); --z) {
+		for (int z = silver.camera.CameraPos.z+silver.camera.CameraScale.z/2-1; z >= silver.camera.CameraPos.z+(-silver.camera.CameraScale.z+silver.camera.CameraScale.z/2); --z) {
 		    auto it = sprites.find({rotatedX, rotatedY, z});
 		    if (it != sprites.end() && it->second.transparency == 0) {
 		        cout << it->second.shape;
@@ -411,32 +364,32 @@ vector <int> Silver::Seek(string objectName) {
 }
 
 vector<vector<string>> Silver::Camera::gPhoto() {
-    vector<vector<string>> output(CameraScaleY, vector<string>(CameraScaleX));
+    vector<vector<string>> output(silver.camera.CameraScale.y, vector<string>(silver.camera.CameraScale.x));
 
-    float radians = cameraRotation * (M_PI / 180.0);
+    float radians = silver.camera.cameraRotation * (M_PI / 180.0);
     float cosTheta = cos(radians);
     float sinTheta = sin(radians);
 
-    for (int j = 0; j < CameraScaleY; ++j) {
-        for (int i = 0; i < CameraScaleX; ++i) {
+    for (int j = 0; j < silver.camera.CameraScale.y; ++j) {
+        for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
             bool flag = true;
 
-            int dx = i - CameraScaleX / 2;
-            int dy = j - CameraScaleY / 2;
+            int dx = i - silver.camera.CameraScale.x / 2;
+            int dy = j - silver.camera.CameraScale.y / 2;
 
-            int rotatedX = round(cosTheta * dx + sinTheta * dy + CameraX);
-            int rotatedY = round(-sinTheta * dx + cosTheta * dy + CameraY);
+            int rotatedX = round(cosTheta * dx + sinTheta * dy + silver.camera.CameraPos.x);
+            int rotatedY = round(-sinTheta * dx + cosTheta * dy + silver.camera.CameraPos.y);
 
-            if (isFlippedHorizontal == -1) {
+            if (silver.camera.isFlippedHorizonal == -1) {
                 rotatedX = WorldX - rotatedX - 1;
             }
-            if (isFlippedVertical == -1) {
+            if (silver.camera.isFlippedVertical == -1) {
                 rotatedY = WorldY - rotatedY - 1;
             }
 
            
                 bool spriteFound = false;
-                for (int z = CameraZ+CameraScaleZ/2-1; z >= CameraZ+(-CameraScaleZ+CameraScaleZ/2); --z) {
+                for (int z = silver.camera.CameraPos.z+silver.camera.CameraScale.z/2-1; z >= silver.camera.CameraPos.z+(-silver.camera.CameraScale.z+silver.camera.CameraScale.z/2); --z) {
                     auto it = sprites.find({rotatedX, rotatedY, z});
                     if (it != sprites.end() && it->second.transparency == 0) {
                         output[j][i] = it->second.shape;
@@ -467,30 +420,30 @@ mutex bufferMutex;
 void Silver::Camera::printCam() {
     if(isFirst) {silver.setRawMode(); silver.clear();}
     // Initialize the buffer with null_rep
-    vector<vector<string>> buffer(CameraScaleY, vector<string>(CameraScaleX, null_rep));
+    vector<vector<string>> buffer(silver.camera.CameraScale.y, vector<string>(silver.camera.CameraScale.x, null_rep));
 
-    float radians = cameraRotation * (M_PI / 180.0);
+    float radians = silver.camera.cameraRotation * (M_PI / 180.0);
     float cosTheta = cos(radians);
     float sinTheta = sin(radians);
 
     // Precompute camera offsets
-    int centerX = CameraScaleX / 2;
-    int centerY = CameraScaleY / 2;
+    int centerX = silver.camera.CameraScale.x / 2;
+    int centerY = silver.camera.CameraScale.y / 2;
 
     // Render the entire camera area
-    for (int j = 0; j < CameraScaleY; ++j) {
-        for (int i = 0; i < CameraScaleX; ++i) {
+    for (int j = 0; j < silver.camera.CameraScale.y; ++j) {
+        for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
             int dx = i - centerX;
             int dy = j - centerY;
 
             // Precompute rotated coordinates
-            int rotatedX = round(cosTheta * dx + sinTheta * dy + CameraX);
-            int rotatedY = round(-sinTheta * dx + cosTheta * dy + CameraY);
+            int rotatedX = round(cosTheta * dx + sinTheta * dy + silver.camera.CameraPos.x);
+            int rotatedY = round(-sinTheta * dx + cosTheta * dy + silver.camera.CameraPos.y);
 
-            if (isFlippedHorizontal == -1) {
+            if (silver.camera.isFlippedHorizonal == -1) {
                 rotatedX = WorldX - rotatedX - 1;
             }
-            if (isFlippedVertical == -1) {
+            if (silver.camera.isFlippedVertical == -1) {
                 rotatedY = WorldY - rotatedY - 1;
             }
 
@@ -500,7 +453,7 @@ void Silver::Camera::printCam() {
                                     : null_rep;
 
             // Find sprite at this position
-            for (int z = CameraZ+CameraScaleZ/2-1; z >= CameraZ+(-CameraScaleZ+CameraScaleZ/2); --z) {
+            for (int z = silver.camera.CameraPos.z+silver.camera.CameraScale.z/2-1; z >= silver.camera.CameraPos.z+(-silver.camera.CameraScale.z+silver.camera.CameraScale.z/2); --z) {
                 auto it = sprites.find({rotatedX, rotatedY, z});
                 if (it != sprites.end() && it->second.transparency == 0) {
                     currentShape = it->second.shape;
@@ -514,24 +467,24 @@ void Silver::Camera::printCam() {
     }
 
     // Output the buffer, only update changes
-    for (int j = 0; j < CameraScaleY; ++j) {
-        for (int i = 0; i < CameraScaleX; ++i) {
+    for (int j = 0; j < silver.camera.CameraScale.y; ++j) {
+        for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
             auto currentFrame = make_tuple(i, j);
             if(i==cursorPositionX && j==cursorPositionY) {
-                	silver.gotoxy(i*cellSize, j);
+                	silver.gotoxy(i*silver.camera.cellSize, j);
                 	cout << "↖️" << flush;
                 	lastFrame[currentFrame] = "↖️";
                 	continue;
             }
             if (isFirst || lastFrame[currentFrame] != buffer[j][i]) {
-                silver.gotoxy(i*cellSize, j);
+                silver.gotoxy(i*silver.camera.cellSize, j);
                 
-                if (buffer[j][i].size() > cellSize * 4) {
-		    // Print only the first 'cellSize' characters
-		    cout << buffer[j][i].substr(0, cellSize) << flush;
+                if (buffer[j][i].size() > silver.camera.cellSize * 4) {
+		    // Print only the first 'silver.camera.cellSize' characters
+		    cout << buffer[j][i].substr(0, silver.camera.cellSize) << flush;
 	
 
-		    // Store only the first 'cellSize' characters in lastFrame
+		    // Store only the first 'silver.camera.cellSize' characters in lastFrame
 		    lastFrame[currentFrame] = buffer[j][i];
 		}
 
@@ -550,24 +503,24 @@ void Silver::Camera::printCam() {
     bool sign = false;
     string signMessage, signIcon, objectName;
 
-    for (int j = 0; j < CameraScaleY; ++j) {
-        for (int i = 0; i < CameraScaleX; ++i) {
+    for (int j = 0; j < silver.camera.CameraScale.y; ++j) {
+        for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
             int dx = i - centerX;
             int dy = j - centerY;
 
             // Precompute rotated coordinates
-            int rotatedX = round(cosTheta * dx + sinTheta * dy + CameraX);
-            int rotatedY = round(-sinTheta * dx + cosTheta * dy + CameraY);
+            int rotatedX = round(cosTheta * dx + sinTheta * dy + silver.camera.CameraPos.x);
+            int rotatedY = round(-sinTheta * dx + cosTheta * dy + silver.camera.CameraPos.y);
 
-            if (isFlippedHorizontal == -1) {
+            if (isFlippedHorizonal == -1) {
                 rotatedX = WorldX - rotatedX - 1;
             }
-            if (isFlippedVertical == -1) {
+            if (silver.camera.isFlippedVertical == -1) {
                 rotatedY = WorldY - rotatedY - 1;
             }
 
             if (rotatedX >= 0 && rotatedY >= 0 && rotatedX < WorldX && rotatedY < WorldY) {
-                for (int z = CameraZ+CameraScaleZ/2-1; z >= CameraZ+(-CameraScaleZ+CameraScaleZ/2); --z) {
+                for (int z = silver.camera.CameraPos.z+silver.camera.CameraScale.z/2-1; z >= silver.camera.CameraPos.z+(-silver.camera.CameraScale.z+silver.camera.CameraScale.z/2); --z) {
                     auto it = sprites.find({rotatedX, rotatedY, z});
                     if (it != sprites.end() && it->second.transparency == 0 && !it->second.Components.signMessage.empty()) {
                         signMessage = it->second.Components.signMessage;
@@ -584,7 +537,7 @@ void Silver::Camera::printCam() {
     // Display sign message if found
     if (sign) {
         cout << "\n\n*************************************\n"
-             << signIcon << string(cellSize, ' ') << objectName << endl
+             << signIcon << string(silver.camera.cellSize, ' ') << objectName << endl
              << signMessage << endl;
     }
 }
@@ -598,28 +551,28 @@ void Silver::clear() {
 
 void Silver::Camera::flipCamera(int X, int Y) {
     if (X == 1 || X == -1) {
-        isFlippedHorizontal *= X;
+        silver.camera.isFlippedHorizonal *= X;
     }
     if (Y == 1 || Y == -1) {
-        isFlippedVertical *= Y;
+        silver.camera.isFlippedVertical *= Y;
     }
 }
 
 void Silver::Camera::SetCameraFlip(int X, int Y) {
     if (X == 1 || X == -1) {
-        isFlippedHorizontal = X;
+        silver.camera.isFlippedHorizonal = X;
     }
     if (Y == 1 || Y == -1) {
-        isFlippedVertical = Y;
+        silver.camera.isFlippedVertical = Y;
     }
 }
 
 void Silver::Camera::pivotCamera(int angle) {
-    cameraRotation = angle;
+    silver.camera.cameraRotation = angle;
 }
 
 void Silver::Camera::addPivotCamera(int angle) {
-    cameraRotation += angle;
+    silver.camera.cameraRotation += angle;
 }
 
 void Silver::clean(int x1, int y1, int x2, int y2) {
@@ -675,37 +628,37 @@ void Silver::loadChunk(const string &file) {
 }
 
 void Silver::Camera::moveCamera(Vec3 V){
-    CameraX += V.x;
-    CameraY += V.y;
+    silver.camera.CameraPos.x += V.x;
+    silver.camera.CameraPos.y += V.y;
 }
 
 void Silver::Camera::shakeCameraOnce(float intensity) {
     float offsetX = intensity * (rand() % 100 / 100.0f - 0.5f);  
     float offsetY = intensity * (rand() % 100 / 100.0f - 0.5f);
 
-    CameraX += (int)offsetX;
-    CameraY += (int)offsetY;
+    silver.camera.CameraPos.x += (int)offsetX;
+    silver.camera.CameraPos.y += (int)offsetY;
 }
 
 void Silver::Camera::shakeCamera(float intensity, int shakes, float delayBetweenShakes) {
-    float originalX = CameraX;
-    float originalY = CameraY;
+    float originalX = silver.camera.CameraPos.x;
+    float originalY = silver.camera.CameraPos.y;
 
     for (int i = 0; i < shakes; ++i) {
         float offsetX = intensity * (rand() % 100 / 100.0f - 0.5f);  
         float offsetY = intensity * (rand() % 100 / 100.0f - 0.5f);
 
-        CameraX = originalX + (int)offsetX;
-        CameraY = originalY + (int)offsetY;
+        silver.camera.CameraPos.x = originalX + (int)offsetX;
+        silver.camera.CameraPos.y = originalY + (int)offsetY;
 
         silver.wait(delayBetweenShakes);
     }
 
-    CameraX = originalX;
-    CameraY = originalY;
+    silver.camera.CameraPos.x = originalX;
+    silver.camera.CameraPos.y = originalY;
 }
 
-std::pair <int,int> Silver::getConsoleSize() {
+pair <int,int> Silver::getConsoleSize() {
     struct winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
     int width = w.ws_col;
@@ -723,20 +676,20 @@ Vec2 Silver::getConsoleCenter() {
 
 
 void Silver::Camera::zoomCamera(Vec3 V){
-    CameraScaleX += V.x;
-    CameraScaleY += V.y;
-    if (CameraScaleX < 0) CameraScaleX = 0;
-    if (CameraScaleY < 0) CameraScaleY = 0;
+    silver.camera.CameraScale.x += V.x;
+    silver.camera.CameraScale.y += V.y;
+    if (silver.camera.CameraScale.x < 0) silver.camera.CameraScale.x = 0;
+    if (silver.camera.CameraScale.y < 0) silver.camera.CameraScale.y = 0;
 }
 
 
 
-std::atomic<bool> VMouse = false; // To stop the thread when needed
+atomic<bool> VMouse = false; // To stop the thread when needed
 
 void VMouseOn(int l, int r, int u, int d, int c) {
     
     while (!VMouse) {
-   	    char det=silver.keyboard.detectedKey();
+   	    char det=silver.keyboard.getKey();
             if (det==l) {
 		cursorPositionX--; // Move cursor left
 	    }
@@ -750,15 +703,16 @@ void VMouseOn(int l, int r, int u, int d, int c) {
 		cursorPositionY++; // Move cursor down
 	    }
 	    if (det==c) {
-		std::cout << "Click detected at (" << cursorPositionX << ", " << cursorPositionY << ")" << std::endl;
+
+		cout << "Click detected at (" << cursorPositionX << ", " << cursorPositionY << ")" << endl;
 	    }
-	    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	    this_thread::sleep_for(chrono::milliseconds(10));
     }
 }
 
 void Silver::startVMouse(int l, int r, int u, int d, int c)  {
     VMouse = false; 
-    std::thread vmouseThread(VMouseOn, l, r, u, d, c);
+    thread vmouseThread(VMouseOn, l, r, u, d, c);
     vmouseThread.detach(); 
 }
 
@@ -837,9 +791,9 @@ zone RectangleZone(Vec3 first, Vec3 second){
     return z;
 }
 
-void Silver::createObject(const string name, const string& shape){
+void Silver::createObject(const string name, const string shape){
     if (globalObjects.count(name) > 0) {
-        return; // Object with this name already exists
+        return; 
     }
 
     objects A;
@@ -931,6 +885,9 @@ void Silver::Camera::startVideo(int FPS) {
 void Silver::Camera::endVideo() {
   isRunningCam = false; // Set the flag to false to stop the loop
 }
+void Silver::Camera::restartVideo() {
+  isRunningCam = true; // Set the flag to false to stop the loop
+}
 void Silver::wait(float time){
     this_thread::sleep_for(chrono::milliseconds(static_cast<int>(time)));
 }
@@ -986,8 +943,8 @@ void Silver::applyComponent(string object, int number, string component, ...) {
     va_end(args);
 }
 
-std::vector<std::string> Silver::spriteAt3(Vec3 pos) {
-    std::vector<std::string> result;
+vector<string> Silver::spriteAt3(Vec3 pos) {
+    vector<string> result;
 
     // Using range-based iteration to find all elements with matching position
     auto range = sprites.equal_range({pos.x, pos.y, pos.z});
@@ -997,8 +954,8 @@ std::vector<std::string> Silver::spriteAt3(Vec3 pos) {
 
     return result;
 }
-std::vector<std::string> Silver::spriteAt2(Vec3 pos) {
-    std::vector<std::string> names;
+vector<string> Silver::spriteAt2(Vec3 pos) {
+    vector<string> names;
 
     // Ensure position is within bounds
     if (pos.x >= 0 && pos.y >= 0 && pos.x < WorldX && pos.y < WorldY) {

@@ -29,10 +29,6 @@
 #include "game.hpp"
 
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-
 #define MAX_TOKEN_SIZE 1000
 #define all -1
 #define origin -2
@@ -43,11 +39,6 @@
 #define escapeKey 27
 #define drawing -214743648
 
-#define NUM_THREADS 1
-
-extern int CameraX, CameraY, CameraScaleX, CameraScaleY, CameraDepth;
-extern int cameraRotation;
-extern int isFlippedHorizontal, isFlippedVertical;
 
 using namespace std;
 
@@ -213,7 +204,7 @@ public:
                                        const string& target, int targetNumber);
     void placeSpray(string objectName, int number, int spawns, Vec3 center, int range);
     void placeExactSpray(const string objectName, int number, int count, Vec3 startPosition);
-    void createObject(const string name, const string& shape);
+    void createObject(const string name, const string shape);
 
     void place(string objectName, int number, Vec3 position);
 
@@ -250,26 +241,33 @@ public:
     
     
 class Camera {
-public:
+  public:
+    Vec3 CameraPos={0,0,0};
+    Vec3 CameraScale={0,0,0};
+    int cameraRotation=0;
+    int isFlippedHorizonal=1, isFlippedVertical=1;
+    int cellSize=2;
+    
     void setCam3(Vec3 pos, Vec3 scale);
     void setCam2(Vec3 pos, Vec3 scale);
     void printCam();
-    void flipCamera(int X, int Y); //
+    void flipCamera(int X, int Y); 
     
 
     void SetCameraFlip(int X, int Y);
-    void pivotCamera(int angle); //
-    void addPivotCamera(int angle); //
+    void pivotCamera(int angle); 
+    void addPivotCamera(int angle); 
     void shakeCameraOnce(float intensity); 
     void shakeCamera(float intensity, int shakes, float delayBetweenShakes);
-    void zoomCamera(Vec3 V); //
-    void addCameraDepth(int X); //
+    void zoomCamera(Vec3 V); 
+    void addCameraDepth(int X); 
     void cell(int c);
     void configCameraException(string o, string n);
-    void setCameraDepth(int X); //
-    void moveCamera(Vec3 V); //
+    void setCameraDepth(int X); 
+    void moveCamera(Vec3 V); 
     void startVideo(int FPS);
     void endVideo();
+    void restartVideo();
     void photo();
     vector<vector<string>> gPhoto();
 
@@ -307,8 +305,8 @@ class SilverConsole {
 // Define a class for managing keyboard input
 class Keyboard {
 public:
-    char detectedKey();
-    void detectKey();
+    char keyBuffer='\0';
+    char getKey();
     bool isKey(char Key);
 };
 
