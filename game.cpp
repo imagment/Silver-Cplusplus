@@ -1,41 +1,36 @@
-// game.cpp 
 #include <iostream>
 #include <thread>
 #include <vector>
 #include <string>
+
 #include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <map>
+#include <stdexcept>
+#include <csignal> 
 #include <sstream>
 #include <atomic>
 #include <cstdarg>
 #include <ctime>
+
 #include <cstdlib>
 #include <sys/ioctl.h>
-
 #include <tuple>
 #include <unordered_map>
+
 #include <unordered_set>
 #include <set>
 #include <functional>
-
 #include <termios.h>
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <typeinfo>
-
+#include <condition_variable>
 #include "game.hpp"
 
-#define DEFAULT_TICK 0.1
-#define WORLD_SIZE 100
-#define WORLD_DEPTH 51
 #define BUFFER_SIZE 5000
-
-
-#define MAX_TOKEN_SIZE 1000
-
-
 
 using namespace std;
 
@@ -43,25 +38,21 @@ mutex scriptMutex;
 unordered_set<string> currentPressedKeys;
 unordered_set<string> previousPressedKeys;
 atomic<bool> keepListening(true);
+
 mutex keyMutex;
 multimap<tuple<int, int, int>, mesh> sprites;
-//multimap<pair<string,int>, tuple<int, int, int>> string_sprites;
+multimap<tuple<int, int, int>, mesh> killedSprites;
+
 map <string, objects> globalObjects;
-
-
 vector<scene> scenes;
-
 
 string out_of_bounds = "🟦";
 string null_rep = "🧱";
 
+int nextObjectPointer=0;
 int WorldX = 20, WorldY = 20;
-int cursorPositionX = 0;
-int cursorPositionY = 0;
-
 
 Silver silver;
-
 
 void Silver::Camera::cell(int c){
 	silver.camera.cellSize=c;
@@ -72,45 +63,95 @@ void Silver::Camera::configCameraException(string o, string n){
 	out_of_bounds=o;
 }
 
+vector<mesh> Silver::MeshAt(Vec3 pos, ...) {
+    va_list args;
+    va_start(args, pos);
+
+    multimap<tuple<int, int, int>, mesh>* m = &sprites;
+    if (void* temp = va_arg(args, void*)) {
+        m = reinterpret_cast<multimap<tuple<int, int, int>, mesh>*>(temp);
+    }
+
+    va_end(args);
+
+    auto range = m->equal_range(make_tuple(pos.x, pos.y, pos.z));
+
+    vector<mesh> result;
+
+    for (auto it = range.first; it != range.second; ++it) {
+        result.push_back(it->second); 
+    }
+
+    return result; 
+}
+
+void Silver::PlaceMesh(mesh m, Vec3 pos) {
+	sprites.insert({{pos.x,pos.y,pos.z},m});
+} 
+
+vector<mesh> Silver::GetMeshOf(string name, variant<int, vector<int>> number) {
+    vector<mesh> result;
+
+    for (auto& entry : sprites) {
+        auto& obj = entry.second;
+
+        if (name == pointer) { 
+            if (holds_alternative<vector<int>>(number)) {
+                auto& numbers = get<vector<int>>(number);
+
+                if (find(numbers.begin(), numbers.end(), obj.objectPointer) != numbers.end()) {
+                    result.push_back(obj);
+                }
+            } else { 
+                if (obj.objectPointer == get<int>(number)) {
+                    result.push_back(obj);
+                }
+            }
+        } else { 
+            if (holds_alternative<vector<int>>(number)) {
+                auto& numbers = get<vector<int>>(number);
+
+                if (obj.object.name == name && (find(numbers.begin(), numbers.end(), obj.object.number) != numbers.end() || get<int>(number) == all)) {
+                    result.push_back(obj);
+                }
+            } else { 
+                if (obj.object.name == name && (get<int>(number) == all || get<int>(number) == obj.object.number)) {
+                    result.push_back(obj);
+                }
+            }
+        }
+    }
+
+    return result; 
+}
+
+map <char, int> keys;
 
 char Silver::Keyboard::getKey() {
     struct termios oldt, newt;
     int ch;
     int oldf;
 
-    // Get current terminal settings
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
-
-    // Disable canonical mode and echo
     newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
-    // Set non-blocking mode for input
     oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
     fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-    // Check for key press
     ch = getchar();
 
-    // Restore original terminal settings after checking for key
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     fcntl(STDIN_FILENO, F_SETFL, oldf);
 
-    // If a key is pressed, return the key without echoing it to the console
     if (ch != EOF) {
     	if(ch>='a' && ch<='z') ch+='A'-'a';
     	keyBuffer=ch;
-        return ch;  // Return detected key
+        return ch;  
     }
     keyBuffer='\0';
-    return '\0'; // Return null character if no key was pressed
+    return '\0'; 
 }
-
-
-
-
-
 
 bool Silver::Keyboard::isKey(char key) {
     if (keyBuffer==key) {
@@ -119,13 +160,16 @@ bool Silver::Keyboard::isKey(char key) {
     return false;
 }
 
-
-
+bool Silver::Mouse::isMouse() {
+    if (silver.keyboard.keyBuffer==mouseKey) {
+        return true;
+    }
+    return false;
+}
 
 void Silver::gotoxy(int x, int y )
 {
     printf("\033[%d;%dH", y+1, x+1);
-    //Use 'H' to handle strings as well as chars
 }
 
 Vec3 rotatePoint(Vec3 point, float angle) {
@@ -136,7 +180,6 @@ Vec3 rotatePoint(Vec3 point, float angle) {
                  static_cast<int>(round(point.x * sinA + point.y * cosA)),0);
 }
 
-
 void Silver::draw(Vec3 pos, string c) {
     mesh p;
     p.object.position = pos;
@@ -145,67 +188,48 @@ void Silver::draw(Vec3 pos, string c) {
     p.transparency = 0;
 
    sprites.insert({{pos.x, pos.y, pos.z}, p});
-   
 }
-void Silver::placeSpray(string objectName, int number, int spawns, Vec3 center, int range) {
-    if (spawns <= 0 || globalObjects.count(objectName) == 0) {
-        return;
+
+void Silver::spray(int spawns, Vec3 center, int range, string c) {
+    srand(static_cast<unsigned int>(time(nullptr)));
+
+    for (int i = 0; i < spawns; ++i) {
+        int offsetX = rand() % (2 * range + 1) - range; 
+        int offsetY = rand() % (2 * range + 1) - range;
+
+        Vec3 position = {center.x + offsetX, center.y + offsetY, center.z};
+
+        draw(position, c);  
     }
+}
+void Silver::sprayOval(int spawns, Vec3 center, Vec3 scale, string c) {
+    srand(static_cast<unsigned int>(time(nullptr)));
 
-    auto objIt = globalObjects.find(objectName);
-    if (objIt != globalObjects.end()) {
-        // Seed the random number generator
-        srand(static_cast<unsigned int>(time(nullptr)));
+    for (int i = 0; i < spawns; ++i) {
+        double angle = static_cast<double>(rand()) / RAND_MAX * 2 * M_PI;
+        double distanceX = (static_cast<double>(rand()) / RAND_MAX) * scale.x;
+        double distanceY = (static_cast<double>(rand()) / RAND_MAX) * scale.y;
 
-        for (int i = 0; i < spawns; ++i) {
-            // Generate random offsets within the specified range
-            int offsetX = rand() % (2 * range + 1) - range; // Range: [-range, range]
-            int offsetY = rand() % (2 * range + 1) - range; // Range: [-range, range]
+        Vec3 position = {
+            center.x + static_cast<int>(distanceX * cos(angle)),
+            center.y + static_cast<int>(distanceY * sin(angle)),
+            center.z
+        };
 
-            // Create the new position
-            Vec3 position = {center.x + offsetX, center.y + offsetY, center.z};
-
-            // Create a mesh object and initialize it
-            mesh X;
-            X.object.position = position;
-            X.object.number = number; // or any specific number logic you want
-            X.object.name = objectName;
-            X.shape = objIt->second.shape;
-            X.transparency = objIt->second.transparency;
-            X.anim = objIt->second.anim;
-            X.Components = objIt->second.Components; // Assign the Components member
-
-            // Draw the object
-            sprites.insert({{position.x, position.y, position.z},X}); // Add to sprites
-            
-        }
+        draw(position, c);  
     }
 }
 
-void Silver::placeExactSpray(string objectName, int number, int count, Vec3 startPosition) {
-    if (count <= 0 || globalObjects.count(objectName) == 0) {
-        return;
-    }
+void Silver::sprayRectangle(int spawns, Vec3 center, Vec3 scale, string c) {
+    srand(static_cast<unsigned int>(time(nullptr)));
 
-    auto objIt = globalObjects.find(objectName);
-    if (objIt != globalObjects.end()) {
-        for (int i = 0; i < count; ++i) {
-            // Create the position for each object
-            Vec3 position = {startPosition.x, startPosition.y, startPosition.z + i}; // Stacking in the z-direction
+    for (int i = 0; i < spawns; ++i) {
+        int offsetX = rand() % static_cast<int>(scale.x); 
+        int offsetY = rand() % static_cast<int>(scale.y);
 
-            // Place the object at the new position
-            mesh X;
-            X.object.position = position;
-            X.object.number = number; // Adjust if necessary
-            X.object.name = objectName;
-            X.shape = objIt->second.shape;
-            X.transparency = objIt->second.transparency;
-            X.anim = objIt->second.anim;
-            X.Components = objIt->second.Components;
+        Vec3 position = {center.x + offsetX, center.y + offsetY, center.z};
 
-            // Place the object in the sprites map
-            sprites.insert({{position.x, position.y, position.z},X});
-        }
+        draw(position, c);  
     }
 }
 
@@ -215,6 +239,87 @@ void Silver::drawRectangle(Vec3 topLeft, int width, int height, string c) {
             Vec3 pos = {topLeft.x + i, topLeft.y + j, topLeft.z};
             draw(pos, c);
         }
+    }
+}
+void Silver::sprayPlaceRectangle(string name, int number, int spawns, Vec3 center, Vec3 scale) {
+    srand(static_cast<unsigned int>(time(nullptr)));
+
+    for (int i = 0; i < spawns; ++i) {
+        int offsetX = rand() % static_cast<int>(scale.x); 
+        int offsetY = rand() % static_cast<int>(scale.y);
+
+        Vec3 position = {center.x + offsetX, center.y + offsetY, center.z};
+
+        place(name, number, position);
+    }
+}
+void Silver::sprayPlaceLine(string name, int number, int spawns, Vec3 start, Vec3 end) {
+    srand(static_cast<unsigned int>(time(nullptr)));
+
+    int dx = end.x - start.x;
+    int dy = end.y - start.y;
+    int dz = end.z - start.z;
+
+    for (int i = 0; i < spawns; ++i) {
+        double t = static_cast<double>(rand()) / RAND_MAX;  // Random value between 0 and 1
+        
+        Vec3 position = {
+            static_cast<int>(start.x + t * dx),
+            static_cast<int>(start.y + t * dy),
+            static_cast<int>(start.z + t * dz)
+        };
+
+        place(name, number, position);
+    }
+}
+void Silver::sprayPlaceOval(string name, int number, int spawns, Vec3 center, Vec3 scale) {
+    srand(static_cast<unsigned int>(time(nullptr)));
+
+    for (int i = 0; i < spawns; ++i) {
+        double angle = static_cast<double>(rand()) / RAND_MAX * 2 * M_PI;
+        double distanceX = (static_cast<double>(rand()) / RAND_MAX) * scale.x;
+        double distanceY = (static_cast<double>(rand()) / RAND_MAX) * scale.y;
+
+        Vec3 position = {
+            center.x + static_cast<int>(distanceX * cos(angle)),
+            center.y + static_cast<int>(distanceY * sin(angle)),
+            center.z
+        };
+
+        place(name, number, position);
+    }
+}
+void Silver::sprayLine(int spawns, Vec3 start, Vec3 end, string c) {
+    srand(static_cast<unsigned int>(time(nullptr)));
+
+    int dx = end.x - start.x;
+    int dy = end.y - start.y;
+    int dz = end.z - start.z;
+
+    for (int i = 0; i < spawns; ++i) {
+        double t = static_cast<double>(rand()) / RAND_MAX;  // Random value between 0 and 1
+        
+        // Calculate a random point along the line
+        Vec3 position = {
+            static_cast<int>(start.x + t * dx),
+            static_cast<int>(start.y + t * dy),
+            static_cast<int>(start.z + t * dz)
+        };
+
+        draw(position, c);  
+    }
+}
+
+void Silver::sprayPlace(string name, int number, int spawns, Vec3 center, int range) {
+    srand(static_cast<unsigned int>(time(nullptr)));
+
+    for (int i = 0; i < spawns; ++i) {
+        int offsetX = rand() % (2 * range + 1) - range; 
+        int offsetY = rand() % (2 * range + 1) - range;
+
+        Vec3 position = {center.x + offsetX, center.y + offsetY, center.z};
+
+        place(name, number, position);
     }
 }
 
@@ -230,14 +335,12 @@ void Silver::drawRectangleHollow(Vec3 topLeft, int width, int height, string c) 
     }
 }
 
-
 void Silver::drawCircle(Vec3 center, int radius, string c) {
     for (int y = center.y - radius; y <= center.y + radius; ++y) {
         for (int x = center.x - radius; x <= center.x + radius; ++x) {
             int dx = x - center.x;
             int dy = y - center.y;
 
-            
             if (dx * dx + dy * dy <= radius * radius) {
                 draw({x, y, center.z}, c);
             }
@@ -253,15 +356,12 @@ void Silver::drawLine(Vec3 start, Vec3 end, string c) {
 
     int dx = abs(x2 - x1);
     int dy = abs(y2 - y1);
-    int sx = (x1 < x2) ? 1 : -1; // Step in x direction
-    int sy = (y1 < y2) ? 1 : -1; // Step in y direction
-
+    int sx = (x1 < x2) ? 1 : -1; 
+    int sy = (y1 < y2) ? 1 : -1;
     int err = dx - dy;
 
     while (true) {
-        draw({x1, y1, start.z}, c); // Draw the pixel at (x1, y1)
-
-        // Check if we reached the end point
+        draw({x1, y1, start.z}, c); 
         if (x1 == x2 && y1 == y2) break;
 
         if (err*2 > -dy) {
@@ -275,6 +375,36 @@ void Silver::drawLine(Vec3 start, Vec3 end, string c) {
     }
 }
 
+void Silver::drawOval(Vec3 center, Vec3 scale, string c) {
+    for (int y = center.y - scale.y; y <= center.y + scale.y; ++y) {
+        for (int x = center.x - scale.x; x <= center.x + scale.x; ++x) {
+            int dx = x - center.x;
+            int dy = y - center.y;
+
+            if ((dx * dx) * (scale.y * scale.y) + (dy * dy) * (scale.x * scale.x) <= (scale.x * scale.x * scale.y * scale.y)) {
+                draw({x, y, center.z}, c);  
+            }
+        }
+    }
+}
+void Silver::drawOvalHollow(Vec3 center, Vec3 scale, string c) {
+    for (int y = center.y - scale.y; y <= center.y + scale.y; ++y) {
+        for (int x = center.x - scale.x; x <= center.x + scale.x; ++x) {
+            int dx = x - center.x;
+            int dy = y - center.y;
+
+            int first=((dx * dx) * (scale.y * scale.y) + (dy * dy) * (scale.x * scale.x) <= (scale.x * scale.x * scale.y * scale.y));
+            scale.x--;
+            scale.y--;
+            int second=((dx * dx) * (scale.y * scale.y) + (dy * dy) * (scale.x * scale.x) <= (scale.x * scale.x * scale.y * scale.y));
+            if (first && !second) {
+                draw({x, y, center.z}, c);  
+            }
+            scale.x++;
+            scale.y++;
+        }
+    }
+}
 
 void Silver::drawCircleHollow(Vec3 center, int radius, string c) {
     for (int y = center.y - radius; y <= center.y + radius; ++y) {
@@ -283,9 +413,114 @@ void Silver::drawCircleHollow(Vec3 center, int radius, string c) {
             int dy = y - center.y;
             int distanceSquared = dx * dx + dy * dy;
 
-         
             if (distanceSquared >= (radius - 1) * (radius - 1) && distanceSquared <= radius * radius) {
                 draw({x, y, center.z}, c);
+            }
+        }
+    }
+}
+void Silver::placeRectangle(string name, int number, Vec3 topLeft, int width, int height) {
+    for (int i = 0; i < width; ++i) {
+        for (int j = 0; j < height; ++j) {
+            Vec3 pos = {topLeft.x + i, topLeft.y + j, topLeft.z};
+            place(name, number, pos);  // Use place with name, number, and position
+        }
+    }
+}
+
+void Silver::placeRectangleHollow(string name, int number, Vec3 topLeft, int width, int height) {
+    for (int i = 0; i < width; ++i) {
+        place(name, number, {topLeft.x + i, topLeft.y, topLeft.z});                         
+        place(name, number, {topLeft.x + i, topLeft.y + height - 1, topLeft.z});           
+    }
+
+    for (int j = 1; j < height - 1; ++j) {
+        place(name, number, {topLeft.x, topLeft.y + j, topLeft.z});                         
+        place(name, number, {topLeft.x + width - 1, topLeft.y + j, topLeft.z});            
+    }
+}
+
+void Silver::placeCircle(string name, int number, Vec3 center, int radius) {
+    for (int y = center.y - radius; y <= center.y + radius; ++y) {
+        for (int x = center.x - radius; x <= center.x + radius; ++x) {
+            int dx = x - center.x;
+            int dy = y - center.y;
+
+            if (dx * dx + dy * dy <= radius * radius) {
+                place(name, number, {x, y, center.z});  // Use place with name, number, and position
+            }
+        }
+    }
+}
+
+void Silver::placeLine(string name, int number, Vec3 start, Vec3 end) {
+    int x1 = start.x;
+    int y1 = start.y;
+    int x2 = end.x;
+    int y2 = end.y;
+
+    int dx = abs(x2 - x1);
+    int dy = abs(y2 - y1);
+    int sx = (x1 < x2) ? 1 : -1; 
+    int sy = (y1 < y2) ? 1 : -1;
+    int err = dx - dy;
+
+    while (true) {
+        place(name, number, {x1, y1, start.z});  // Use place with name, number, and position
+        if (x1 == x2 && y1 == y2) break;
+
+        if (err * 2 > -dy) {
+            err -= dy;
+            x1 += sx;
+        }
+        if (err * 2 < dx) {
+            err += dx;
+            y1 += sy;
+        }
+    }
+}
+
+void Silver::placeOval(string name, int number, Vec3 center, Vec3 scale) {
+    for (int y = center.y - scale.y; y <= center.y + scale.y; ++y) {
+        for (int x = center.x - scale.x; x <= center.x + scale.x; ++x) {
+            int dx = x - center.x;
+            int dy = y - center.y;
+
+            if ((dx * dx) * (scale.y * scale.y) + (dy * dy) * (scale.x * scale.x) <= (scale.x * scale.x * scale.y * scale.y)) {
+                place(name, number, {x, y, center.z});  // Use place with name, number, and position
+            }
+        }
+    }
+}
+
+void Silver::placeOvalHollow(string name, int number, Vec3 center, Vec3 scale) {
+    for (int y = center.y - scale.y; y <= center.y + scale.y; ++y) {
+        for (int x = center.x - scale.x; x <= center.x + scale.x; ++x) {
+            int dx = x - center.x;
+            int dy = y - center.y;
+
+            int first = ((dx * dx) * (scale.y * scale.y) + (dy * dy) * (scale.x * scale.x) <= (scale.x * scale.x * scale.y * scale.y));
+            scale.x--;
+            scale.y--;
+            int second = ((dx * dx) * (scale.y * scale.y) + (dy * dy) * (scale.x * scale.x) <= (scale.x * scale.x * scale.y * scale.y));
+            if (first && !second) {
+                place(name, number, {x, y, center.z});  // Use place with name, number, and position
+            }
+            scale.x++;
+            scale.y++;
+        }
+    }
+}
+
+void Silver::placeCircleHollow(string name, int number, Vec3 center, int radius) {
+    for (int y = center.y - radius; y <= center.y + radius; ++y) {
+        for (int x = center.x - radius; x <= center.x + radius; ++x) {
+            int dx = x - center.x;
+            int dy = y - center.y;
+            int distanceSquared = dx * dx + dy * dy;
+
+            if (distanceSquared >= (radius - 1) * (radius - 1) && distanceSquared <= radius * radius) {
+                place(name, number, {x, y, center.z});  // Use place with name, number, and position
             }
         }
     }
@@ -302,8 +537,8 @@ void Silver::Camera::setCam2(Vec3 pos, Vec3 scale) {
     silver.camera.CameraScale={pos.x,pos.y,silver.camera.CameraScale.z};
 }
 
-
 void Silver::Camera::photo() {
+    isFirst=false;
     float radians = silver.camera.cameraRotation * (M_PI / 180.0);
     float cosTheta = cos(radians);
     float sinTheta = sin(radians);
@@ -326,7 +561,6 @@ void Silver::Camera::photo() {
                 rotatedY = WorldY - rotatedY - 1;
             }
 
-            
 		bool spriteFound = false;
 		for (int z = silver.camera.CameraPos.z+silver.camera.CameraScale.z/2-1; z >= silver.camera.CameraPos.z+(-silver.camera.CameraScale.z+silver.camera.CameraScale.z/2); --z) {
 		    auto it = sprites.find({rotatedX, rotatedY, z});
@@ -339,11 +573,11 @@ void Silver::Camera::photo() {
 
 		if (!spriteFound) {
 			if (rotatedX < 0 || rotatedY < 0 || rotatedX >= WorldX || rotatedY >= WorldY) cout << out_of_bounds;
-			 
+
 		        else cout << null_rep;
 		} 
 	    }
-        
+
         cout << endl;
     }
 }
@@ -353,90 +587,175 @@ void Silver::setWorldBounds(Vec3 world){
 	WorldY=world.y;
 }
 
-vector <int> Silver::Seek(string objectName) {
+vector <int> Silver::seek(string objectName) {
 	vector <int> numbers;
-	for(auto objIt : sprites) {
-		if(objIt.second.object.name==objectName){
-			numbers.push_back(objIt.second.object.number);
+	for(auto entry : sprites) {
+		if(entry.second.object.name==objectName){
+			numbers.push_back(entry.second.object.number);
 		}
 	}
 	return numbers;
 }
 
-vector<vector<string>> Silver::Camera::gPhoto() {
-    vector<vector<string>> output(silver.camera.CameraScale.y, vector<string>(silver.camera.CameraScale.x));
-
-    float radians = silver.camera.cameraRotation * (M_PI / 180.0);
-    float cosTheta = cos(radians);
-    float sinTheta = sin(radians);
-
-    for (int j = 0; j < silver.camera.CameraScale.y; ++j) {
-        for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
-            bool flag = true;
-
-            int dx = i - silver.camera.CameraScale.x / 2;
-            int dy = j - silver.camera.CameraScale.y / 2;
-
-            int rotatedX = round(cosTheta * dx + sinTheta * dy + silver.camera.CameraPos.x);
-            int rotatedY = round(-sinTheta * dx + cosTheta * dy + silver.camera.CameraPos.y);
-
-            if (silver.camera.isFlippedHorizonal == -1) {
-                rotatedX = WorldX - rotatedX - 1;
-            }
-            if (silver.camera.isFlippedVertical == -1) {
-                rotatedY = WorldY - rotatedY - 1;
-            }
-
-           
-                bool spriteFound = false;
-                for (int z = silver.camera.CameraPos.z+silver.camera.CameraScale.z/2-1; z >= silver.camera.CameraPos.z+(-silver.camera.CameraScale.z+silver.camera.CameraScale.z/2); --z) {
-                    auto it = sprites.find({rotatedX, rotatedY, z});
-                    if (it != sprites.end() && it->second.transparency == 0) {
-                        output[j][i] = it->second.shape;
-                        spriteFound = true;
-                        break;
-                    }
-                }
-
-                if (!spriteFound) {
-                   if (rotatedX < 0 || rotatedY < 0 || rotatedX >= WorldX || rotatedY >= WorldY) {
-		        output[j][i] = out_of_bounds;
-		   } else { 
-                        output[j][i] = null_rep;
-                   }
-                } 
-            }
-        
+vector<int> Silver::seekUnique(string objectName) {
+    set<int> uniqueNumbers;
+    for(auto entry : sprites) {
+        if(entry.second.object.name == objectName) {
+            uniqueNumbers.insert(entry.second.object.number);
+        }
     }
-
-    return output;
+    return vector<int>(uniqueNumbers.begin(), uniqueNumbers.end());
 }
 
-static map<tuple<int, int>, string> lastFrame;
-bool isFirst=true;
-mutex bufferMutex;
+void Silver::destroy(const string& objectName, const variant<int, vector<int>>& number) {
+    vector<tuple<int, int, int>> keysToRemove;
+    vector<string> globalKeysToRemove;
 
+    if (objectName == pointer) {
+
+        if (holds_alternative<int>(number)) {
+            int numValue = get<int>(number);
+            for (const auto& entry : sprites) {
+                if (entry.second.objectPointer == numValue) {
+                    keysToRemove.push_back(entry.first);
+                }
+            }
+        } 
+
+        else if (holds_alternative<vector<int>>(number)) {
+            vector<int> numValues = get<vector<int>>(number);
+            for (const auto& entry : sprites) {
+                if (find(numValues.begin(), numValues.end(), entry.second.objectPointer) != numValues.end()) {
+                    keysToRemove.push_back(entry.first);
+                }
+            }
+        }
+    } else {
+        if (holds_alternative<int>(number)) {
+            int numValue = get<int>(number);
+            if (numValue == origin) {
+
+                for (const auto& entry : globalObjects) {
+                    if (entry.second.name == objectName) {
+                        globalKeysToRemove.push_back(entry.first); 
+                    }
+                }
+            } else {
+
+                for (const auto& entry : sprites) {
+                    if (entry.second.object.name == objectName &&
+                        (entry.second.object.number == all || entry.second.object.number == numValue)) {
+                        keysToRemove.push_back(entry.first); 
+                    }
+                }
+            }
+        } else if (holds_alternative<vector<int>>(number)) {
+            vector<int> numValues = get<vector<int>>(number);
+
+            for (const auto& entry : sprites) {
+                if (entry.second.object.name == objectName &&
+                    (entry.second.object.number == all ||
+                     find(numValues.begin(), numValues.end(), entry.second.object.number) != numValues.end())) {
+                    keysToRemove.push_back(entry.first); 
+                }
+            }
+        }
+    }
+
+    for (const auto& key : keysToRemove) {
+        sprites.erase(key);
+    }
+
+    for (const auto& key : globalKeysToRemove) {
+        globalObjects.erase(key);
+    }
+}
+
+void Silver::kill(const string& objectName, const variant<int, vector<int>>& number) {
+    vector<tuple<int, int, int>> keysToKill;
+    set<int> numberSet; 
+
+    if (holds_alternative<int>(number)) {
+        numberSet.insert(get<int>(number));
+    } else {
+        numberSet = set<int>(get<vector<int>>(number).begin(),
+                             get<vector<int>>(number).end());
+    }
+
+    if (objectName == pointer) {
+        for (const auto& entry : sprites) {
+
+            if (numberSet.count(entry.second.objectPointer)) {
+                keysToKill.push_back(entry.first); 
+            }
+        }
+    } else {
+
+        for (const auto& entry : sprites) {
+            if (entry.second.object.name == objectName &&
+                (numberSet.count(all) || numberSet.count(entry.second.object.number))) {
+                keysToKill.push_back(entry.first); 
+            }
+        }
+    }
+
+    for (const auto& key : keysToKill) {
+        killedSprites.insert({key, sprites.find(key)->second});  
+        sprites.erase(key);  
+    }
+}
+
+void Silver::revive(const string& objectName, const variant<int, vector<int>>& number) {
+    vector<tuple<int, int, int>> keysToRevive;
+    set<int> numberSet; 
+
+    if (holds_alternative<int>(number)) {
+        numberSet.insert(get<int>(number));
+    } else {
+        numberSet = set<int>(get<vector<int>>(number).begin(), get<vector<int>>(number).end());
+    }
+
+    if (objectName == pointer) {
+        for (const auto& entry : killedSprites) {
+            if (numberSet.count(entry.second.objectPointer)) {
+                keysToRevive.push_back(entry.first);
+            }
+        }
+    } else {
+        for (const auto& entry : killedSprites) {
+            if (entry.second.object.name == objectName &&
+                (numberSet.count(all) || numberSet.count(entry.second.object.number))) {
+                keysToRevive.push_back(entry.first);
+            }
+        }
+    }
+
+    for (const auto& key : keysToRevive) {
+        sprites.insert({key, killedSprites.find(key)->second});
+        killedSprites.erase(key);
+    }
+}
 
 void Silver::Camera::printCam() {
-    if(isFirst) {silver.setRawMode(); silver.clear();}
-    // Initialize the buffer with null_rep
+    if (isFirst) {
+        silver.setRawMode();
+        silver.clear();
+    }
+
     vector<vector<string>> buffer(silver.camera.CameraScale.y, vector<string>(silver.camera.CameraScale.x, null_rep));
 
     float radians = silver.camera.cameraRotation * (M_PI / 180.0);
     float cosTheta = cos(radians);
     float sinTheta = sin(radians);
 
-    // Precompute camera offsets
     int centerX = silver.camera.CameraScale.x / 2;
     int centerY = silver.camera.CameraScale.y / 2;
 
-    // Render the entire camera area
     for (int j = 0; j < silver.camera.CameraScale.y; ++j) {
         for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
             int dx = i - centerX;
             int dy = j - centerY;
 
-            // Precompute rotated coordinates
             int rotatedX = round(cosTheta * dx + sinTheta * dy + silver.camera.CameraPos.x);
             int rotatedY = round(-sinTheta * dx + cosTheta * dy + silver.camera.CameraPos.y);
 
@@ -447,13 +766,11 @@ void Silver::Camera::printCam() {
                 rotatedY = WorldY - rotatedY - 1;
             }
 
-            // Default shape is out of bounds
             string currentShape = (rotatedX < 0 || rotatedY < 0 || rotatedX >= WorldX || rotatedY >= WorldY) 
                                     ? out_of_bounds 
                                     : null_rep;
 
-            // Find sprite at this position
-            for (int z = silver.camera.CameraPos.z+silver.camera.CameraScale.z/2-1; z >= silver.camera.CameraPos.z+(-silver.camera.CameraScale.z+silver.camera.CameraScale.z/2); --z) {
+            for (int z = silver.camera.CameraPos.z + silver.camera.CameraScale.z / 2 - 1; z >= silver.camera.CameraPos.z + (-silver.camera.CameraScale.z + silver.camera.CameraScale.z / 2); --z) {
                 auto it = sprites.find({rotatedX, rotatedY, z});
                 if (it != sprites.end() && it->second.transparency == 0) {
                     currentShape = it->second.shape;
@@ -461,45 +778,59 @@ void Silver::Camera::printCam() {
                 }
             }
 
-            // Store current shape in the buffer
             buffer[j][i] = currentShape;
         }
     }
 
-    // Output the buffer, only update changes
+    if (!gridMode) {
+        int mouseX = silver.mouse.cursorPositionX; 
+        int mouseY = silver.mouse.cursorPositionY; 
+
+        for (int j = 0; j < silver.camera.CameraScale.y; ++j) {
+            string line;
+            for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
+                string cellContent = (i == mouseX && j == mouseY) ? "🖱️" : buffer[j][i];
+
+                line += cellContent;
+            }
+
+            silver.gotoxy(0, j); 
+            cout << line << flush;
+        }
+    } else { 
+    int mouseX = silver.mouse.cursorPositionX; 
+    int mouseY = silver.mouse.cursorPositionY; 
+
     for (int j = 0; j < silver.camera.CameraScale.y; ++j) {
         for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
             auto currentFrame = make_tuple(i, j);
-            if(i==cursorPositionX && j==cursorPositionY) {
-                	silver.gotoxy(i*silver.camera.cellSize, j);
-                	cout << "↖️" << flush;
-                	lastFrame[currentFrame] = "↖️";
-                	continue;
+            string cellContent;
+
+            if (i == mouseX && j == mouseY) {
+                cellContent = "🖱️"; 
+            } else {
+                cellContent = buffer[j][i];
             }
-            if (isFirst || lastFrame[currentFrame] != buffer[j][i]) {
-                silver.gotoxy(i*silver.camera.cellSize, j);
-                
-                if (buffer[j][i].size() > silver.camera.cellSize * 4) {
-		    // Print only the first 'silver.camera.cellSize' characters
-		    cout << buffer[j][i].substr(0, silver.camera.cellSize) << flush;
-	
 
-		    // Store only the first 'silver.camera.cellSize' characters in lastFrame
-		    lastFrame[currentFrame] = buffer[j][i];
-		}
+            if (cellContent.size() > silver.camera.cellSize * 4) {
+                cellContent = cellContent.substr(0, silver.camera.cellSize);
+            }
 
-                else {
-                	cout << buffer[j][i] << flush;
-                	lastFrame[currentFrame] = buffer[j][i];
-                }
+            if (fillMode && cellContent.size() < silver.camera.cellSize) {
+                cellContent.append(silver.camera.cellSize - cellContent.size(), ' '); 
+            }
+
+            if (isFirst || silver.camera.lastFrame[currentFrame] != cellContent) {
+                silver.gotoxy(i * silver.camera.cellSize, j);
+                cout << cellContent << flush; 
+                silver.camera.lastFrame[currentFrame] = cellContent; 
             }
         }
     }
+}
 
-    // First frame is rendered
     isFirst = false;
 
-    // Handle sign messages
     bool sign = false;
     string signMessage, signIcon, objectName;
 
@@ -508,11 +839,10 @@ void Silver::Camera::printCam() {
             int dx = i - centerX;
             int dy = j - centerY;
 
-            // Precompute rotated coordinates
             int rotatedX = round(cosTheta * dx + sinTheta * dy + silver.camera.CameraPos.x);
             int rotatedY = round(-sinTheta * dx + cosTheta * dy + silver.camera.CameraPos.y);
 
-            if (isFlippedHorizonal == -1) {
+            if (silver.camera.isFlippedHorizonal == -1) {
                 rotatedX = WorldX - rotatedX - 1;
             }
             if (silver.camera.isFlippedVertical == -1) {
@@ -520,7 +850,7 @@ void Silver::Camera::printCam() {
             }
 
             if (rotatedX >= 0 && rotatedY >= 0 && rotatedX < WorldX && rotatedY < WorldY) {
-                for (int z = silver.camera.CameraPos.z+silver.camera.CameraScale.z/2-1; z >= silver.camera.CameraPos.z+(-silver.camera.CameraScale.z+silver.camera.CameraScale.z/2); --z) {
+                for (int z = silver.camera.CameraPos.z + silver.camera.CameraScale.z / 2 - 1; z >= silver.camera.CameraPos.z + (-silver.camera.CameraScale.z + silver.camera.CameraScale.z / 2); --z) {
                     auto it = sprites.find({rotatedX, rotatedY, z});
                     if (it != sprites.end() && it->second.transparency == 0 && !it->second.Components.signMessage.empty()) {
                         signMessage = it->second.Components.signMessage;
@@ -534,7 +864,6 @@ void Silver::Camera::printCam() {
         }
     }
 
-    // Display sign message if found
     if (sign) {
         cout << "\n\n*************************************\n"
              << signIcon << string(silver.camera.cellSize, ' ') << objectName << endl
@@ -542,8 +871,34 @@ void Silver::Camera::printCam() {
     }
 }
 
+Vec2 Silver::Camera::getScreenPosition(Vec3 pos) {
+    int worldX=pos.x;
+    int worldY=pos.y;
+    float radians = silver.camera.cameraRotation * (M_PI / 180.0);
+    float cosTheta = cos(radians);
+    float sinTheta = sin(radians);
 
+    int centerX = silver.camera.CameraScale.x / 2;
+    int centerY = silver.camera.CameraScale.y / 2;
 
+    float dx = worldX - silver.camera.CameraPos.x;
+    float dy = worldY - silver.camera.CameraPos.y;
+
+    int rotatedX = round(cosTheta * dx + sinTheta * dy);
+    int rotatedY = round(-sinTheta * dx + cosTheta * dy);
+
+    if (silver.camera.isFlippedHorizonal == -1) {
+        rotatedX = WorldX - rotatedX - 1;
+    }
+    if (silver.camera.isFlippedVertical == -1) {
+        rotatedY = WorldY - rotatedY - 1;
+    }
+
+    int screenX = rotatedX + centerX;
+    int screenY = rotatedY + centerY;
+
+    return {screenX, screenY};
+}
 
 void Silver::clear() {
     system("clear");
@@ -607,7 +962,7 @@ void Silver::loadChunk(const string &file) {
             if (sscanf(buffer.c_str() + sizeof("📷") - 1, "%d %d %d %d %d %d", &A, &B, &C, &D, &E, &F) == 6) {
                 Vec3 position = {A, B, C};
                 Vec3 scale = {D,E,F};
-                
+
                 silver.camera.setCam3(position, scale);
                 type = 1;
             }
@@ -615,7 +970,7 @@ void Silver::loadChunk(const string &file) {
             char context[BUFFER_SIZE];
             int coord1, coord2, coord3;
             if (sscanf(buffer.c_str() + sizeof("🗺️") - 1, " \"%[^\"]\" %d %d %d", context, &coord1, &coord2, &coord3) == 4) {
-            	
+
                 silver.draw(Vec3(coord1, coord2, coord3), context);
             }
         } else if (buffer.rfind("💥", 0) == 0) {
@@ -674,7 +1029,6 @@ Vec2 Silver::getConsoleCenter() {
     return Vec2(width-width/2,height-height/2);
 }
 
-
 void Silver::Camera::zoomCamera(Vec3 V){
     silver.camera.CameraScale.x += V.x;
     silver.camera.CameraScale.y += V.y;
@@ -682,45 +1036,44 @@ void Silver::Camera::zoomCamera(Vec3 V){
     if (silver.camera.CameraScale.y < 0) silver.camera.CameraScale.y = 0;
 }
 
-
-
-atomic<bool> VMouse = false; // To stop the thread when needed
+atomic<bool> VMouse = false; 
+mutex mouseMutex; 
 
 void VMouseOn(int l, int r, int u, int d, int c) {
-    
-    while (!VMouse) {
-   	    char det=silver.keyboard.getKey();
-            if (det==l) {
-		cursorPositionX--; // Move cursor left
-	    }
-	    if (det==r) {
-		cursorPositionX++; // Move cursor right
-	    }
-	    if (det==u) {
-		cursorPositionY--; // Move cursor up
-	    }
-	    if (det==d) {
-		cursorPositionY++; // Move cursor down
-	    }
-	    if (det==c) {
+    while (VMouse.load()) {
+        char det = silver.keyboard.getKey();
 
-		cout << "Click detected at (" << cursorPositionX << ", " << cursorPositionY << ")" << endl;
-	    }
-	    this_thread::sleep_for(chrono::milliseconds(10));
+        {
+
+            lock_guard<mutex> lock(mouseMutex);
+            if (det == l) {
+                silver.mouse.cursorPositionX--;
+            } else if (det == r) {
+                silver.mouse.cursorPositionX++;
+            } else if (det == u) {
+                silver.mouse.cursorPositionY--;
+            } else if (det == d) {
+                silver.mouse.cursorPositionY++;
+            } else if (det == c) {
+
+            }
+        }
+
     }
 }
 
-void Silver::startVMouse(int l, int r, int u, int d, int c)  {
-    VMouse = false; 
+void Silver::Mouse::startVMouse(int l, int r, int u, int d, int c) {
+    if (VMouse.load()) return; 
+
+    VMouse.store(true); 
+    mouseKey = c;
     thread vmouseThread(VMouseOn, l, r, u, d, c);
     vmouseThread.detach(); 
 }
 
-void Silver::stopVMouse() {
-    VMouse= true; 
+void Silver::Mouse::stopVMouse() {
+    VMouse.store(false); 
 }
-
-
 
 void startLoading() {
     silver.clear();
@@ -729,66 +1082,6 @@ void startLoading() {
     printf("--------------------------------\n");
     silver.gotoxy(0,1);
     cout << "#" << flush;
-}
-/*
-vector<string> splitLines(const string &s) {
-    vector<string> lines;
-    string temp;
-    for (char c : s) {
-        if (c == '\n') {
-            lines.push_back(temp);
-            temp.clear();
-        } else {
-            temp += c;
-        }
-    }
-    if (!temp.empty()) {
-        lines.push_back(temp);  
-    }
-    return lines;
-}
-
-void printCenter(string s, int x, int y) {
-    vector<string> lines = splitLines(s);  
-
-    int startY = y - (lines.size() / 2);   
-
-    for (int i = 0; i < lines.size(); ++i) {
-        int len = lines[i].length();
-        int startX = x - (len / 2);       
-        silver.gotoxy(startX, startY + i);        
-        cout << lines[i];                 
-    }
-}
-
-*/
-/*
-
-  _________.__.__                      
- /   _____/|__|  |___  __ ___________  
- \_____  \ |  |  |\  \/ // __ \_  __ \ 
- /        \|  |  |_\   /\  ___/|  | \/ 
-/_______  /|__|____/\_/  \___  >__|    
-        \/                   \/     
-    In silver, the worlds deliver   
-  ________________________________
- /####################            \
- ==================================
- 
-         Loading.... 65%
-        Version Num: 1002
- 
-*/
-
-
-zone RectangleZone(Vec3 first, Vec3 second){
-    zone z;
-    z.rect[0].x1=first.x;
-    z.rect[0].y1=first.y;
-    z.rect[0].x2=second.x;
-    z.rect[0].y2=second.y;
-
-    return z;
 }
 
 void Silver::createObject(const string name, const string shape){
@@ -803,47 +1096,48 @@ void Silver::createObject(const string name, const string shape){
     globalObjects[name] = A;
 }
 
-void Silver::place(string objectName, int number, Vec3 position) {
+int Silver::place(string objectName, int number, Vec3 position) {
     if (number < 0) {
         number = 0;
     }
     if (globalObjects.count(objectName) == 0){
-        return;
+        return -1;
     }
 
-    auto objIt = globalObjects.find(objectName);
-    if (objIt != globalObjects.end()) {
+    auto entry = globalObjects.find(objectName);
+    if (entry != globalObjects.end()) {
         mesh X;
         X.object.position = position;
         X.object.number = number;
         X.object.name = objectName;
-        X.shape = objIt->second.shape;
-        X.transparency = objIt->second.transparency;
-        X.anim = objIt->second.anim;
-        X.Components = objIt->second.Components;
+        X.shape = entry->second.shape;
+        X.transparency = entry->second.transparency;
+        X.anim = entry->second.anim;
+        X.Components = entry->second.Components;
 
+	X.objectPointer = nextObjectPointer++;
         sprites.insert({{position.x, position.y, position.z},X});
     }
+    return nextObjectPointer-1;
 }
 
-
-
-void Silver::put(string objectName, Vec3 position) {
-    auto objIt = globalObjects.find(objectName);
-    if (objIt != globalObjects.end()) {
+int Silver::put(string objectName, Vec3 position) {
+    auto entry = globalObjects.find(objectName);
+    if (entry != globalObjects.end()) {
         mesh X;
         X.object.position = position;
         X.object.number = 0;
         X.object.name = objectName;
-        X.shape = objIt->second.shape;
-        X.transparency = objIt->second.transparency;
-        X.anim = objIt->second.anim;
-        
-        
-        X.Components = objIt->second.Components;
+        X.shape = entry->second.shape;
+        X.transparency = entry->second.transparency;
+        X.anim = entry->second.anim;
+        X.objectPointer = nextObjectPointer++;
+
+        X.Components = entry->second.Components;
 
         sprites.insert({{position.x, position.y, position.z},X});
     }
+    return nextObjectPointer-1;
 }
 
 void Silver::applyScript(const string& objectName, int number, const string& script) {
@@ -868,25 +1162,39 @@ void Silver::applyScript(const string& objectName, int number, const string& scr
     }
 }
 
-
 atomic<bool> isRunningCam(false);
+thread videoThread;
+mutex camMutex;
 
 void Silver::Camera::startVideo(int FPS) {
-  isRunningCam = true; // Set the flag to true to start the loop
-  thread videoThread([&FPS] { 
-    while (isRunningCam) {
-      silver.camera.printCam();
-      this_thread::sleep_for(chrono::milliseconds(static_cast<int>(1000.0f / FPS)));
-    }
-  });
-  videoThread.detach();
+
+    lock_guard<mutex> lock(camMutex);  
+    if (isRunningCam) return;  
+
+    isRunningCam = true;
+    videoThread = thread([FPS] { 
+        while (isRunningCam) {
+            silver.camera.printCam();
+            this_thread::sleep_for(chrono::milliseconds(static_cast<int>(1000.0f / FPS)));
+        }
+    });
 }
 
 void Silver::Camera::endVideo() {
-  isRunningCam = false; // Set the flag to false to stop the loop
+    {
+        lock_guard<mutex> lock(camMutex);  
+        if (!isRunningCam) return;  
+
+        isRunningCam = false;
+    }
+    if (videoThread.joinable()) {
+        videoThread.join();  
+    }
 }
-void Silver::Camera::restartVideo() {
-  isRunningCam = true; // Set the flag to false to stop the loop
+
+void Silver::Camera::restartVideo(int FPS) {
+    endVideo();  
+    startVideo(FPS);  
 }
 void Silver::wait(float time){
     this_thread::sleep_for(chrono::milliseconds(static_cast<int>(time)));
@@ -917,7 +1225,7 @@ void Silver::applyComponent(string object, int number, string component, ...) {
             }
         }
     } 
-    else if (component == "sign_reader") { //probably later
+    else if (component == "sign_reader") { 
         string key = va_arg(args, char*);
 
         if (number == origin) {
@@ -946,10 +1254,9 @@ void Silver::applyComponent(string object, int number, string component, ...) {
 vector<string> Silver::spriteAt3(Vec3 pos) {
     vector<string> result;
 
-    // Using range-based iteration to find all elements with matching position
     auto range = sprites.equal_range({pos.x, pos.y, pos.z});
     for (auto it = range.first; it != range.second; ++it) {
-        result.push_back(it->second.object.name); // Assuming the strings are stored as second in pair
+        result.push_back(it->second.object.name); 
     }
 
     return result;
@@ -957,12 +1264,11 @@ vector<string> Silver::spriteAt3(Vec3 pos) {
 vector<string> Silver::spriteAt2(Vec3 pos) {
     vector<string> names;
 
-    // Ensure position is within bounds
     if (pos.x >= 0 && pos.y >= 0 && pos.x < WorldX && pos.y < WorldY) {
-        // Iterate over all sprites
+
         for (auto& entry : sprites) {
             if (entry.second.object.position.x == pos.x && entry.second.object.position.y == pos.y) {
-                // Add the name of the object to the vector
+
                 names.push_back(entry.second.object.name);
             }
         }
@@ -972,886 +1278,685 @@ vector<string> Silver::spriteAt2(Vec3 pos) {
 }
 
 void Silver::setObjectXY(const string& name, const variant<int, vector<int>>& number, Vec3 pos) {
-    int x=pos.x;
-    int y=pos.y;
-    if (holds_alternative<int>(number)) {
-            int singleNumber = get<int>(number);
-	    if (singleNumber == origin){
-		return; 
-	    }
-	    
-	    else if (singleNumber == all){
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()) {
-		            mesh X = it->second;
-		            // Keep the original z value and only update x and y
-		            int z = X.object.position.z;
-		            X.object.position = Vec3(x, y, z);  
-		            sprites.erase(it); 
-		            sprites.insert({{x,y,z},X});
-		        }
-		    }
-		}
-	    }
-	    else {
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name && entry.second.object.number == singleNumber){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()){
-		            mesh X = it->second;
-		            // Keep the original z value and only update x and y
-		            int z = X.object.position.z;
-		            X.object.position = Vec3(x, y, z);
-		            sprites.erase(it);
-		            sprites.insert({{x,y,z},X});
-		        }
-		    }
-		}
-	    }
-	}
-	else {
-		const vector<int>& numbers = get<vector<int>>(number);
-		for (int num : numbers) {
-		    // Handle each number in the array
-		    for (auto& entry : sprites) {
-		        if (entry.second.object.name == name && entry.second.object.number == num) {
-		            auto it = sprites.find(entry.first);
-		            if (it != sprites.end()) {
-		                mesh X = it->second;
-		                int z = X.object.position.z; // Keep the original z value
-		                X.object.position = Vec3{x, y, z};  
-		                sprites.erase(it);
-		                sprites.insert({{x, y, z}, X});
-		            }
-		        }
-		    }
-		}
-	}
-}
+    int x = pos.x;
+    int y = pos.y;
 
-void Silver::setObjectPosition(const string& name, const variant<int, vector<int>>& number, Vec3 pos) {
-    int x=pos.x;
-    int y=pos.y;
-    int z=pos.z;
-    if (holds_alternative<int>(number)) {
-            int singleNumber = get<int>(number);
-	    if (singleNumber == origin){
-		return; 
-	    }
-	    
-	    else if (singleNumber == all){
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()) {
-		            mesh X = it->second;
-
-		            X.object.position = Vec3(x, y, z);  
-		            sprites.erase(it); 
-		            sprites.insert({{x,y,z},X});
-		        }
-		    }
-		}
-	    }
-	    else {
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name && entry.second.object.number == singleNumber){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()){
-		            mesh X = it->second;
-
-		            X.object.position = Vec3(x, y, z);
-		            sprites.erase(it);
-		            sprites.insert({{x,y,z},X});
-		        }
-		    }
-		}
-	    }
-	}
-	else {
-		const vector<int>& numbers = get<vector<int>>(number);
-		for (int num : numbers) {
-		    // Handle each number in the array
-		    for (auto& entry : sprites) {
-		        if (entry.second.object.name == name && entry.second.object.number == num) {
-		            auto it = sprites.find(entry.first);
-		            if (it != sprites.end()) {
-		                mesh X = it->second;
-
-		                X.object.position = Vec3{x, y, z};  
-		                sprites.erase(it);
-		                sprites.insert({{x, y, z}, X});
-		            }
-		        }
-		    }
-		}
-	}
-}
-
-
-void Silver::moveObjectPosition(const string& name, const variant<int, vector<int>>& number, Vec3 pos) {
-    int x=pos.x;
-    int y=pos.y;
-    int z=pos.z;
-    if (holds_alternative<int>(number)) {
-            int singleNumber = get<int>(number);
-	    if (singleNumber == origin){
-		return; 
-	    }
-	    
-	    else if (singleNumber == all){
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()) {
-		            mesh X = it->second;
-
-		            X.object.position += Vec3(x, y, z);  
-		            sprites.erase(it); 
-		            sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z},X});
-		        }
-		    }
-		}
-	    }
-	    else {
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name && entry.second.object.number == singleNumber){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()){
-		            mesh X = it->second;
-
-		            X.object.position += Vec3(x, y, z);
-		            sprites.erase(it);
-		            sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z},X});
-		        }
-		    }
-		}
-	    }
-	}
-	else {
-		const vector<int>& numbers = get<vector<int>>(number);
-		for (int num : numbers) {
-		    // Handle each number in the array
-		    for (auto& entry : sprites) {
-		        if (entry.second.object.name == name && entry.second.object.number == num) {
-		            auto it = sprites.find(entry.first);
-		            if (it != sprites.end()) {
-		                mesh X = it->second;
-
-		                X.object.position += Vec3{x, y, z};  
-		                sprites.erase(it);
-		                sprites.insert({{x, y, z}, X});
-		            }
-		        }
-		    }
-		}
-	}
-}
-
-
-
-
-
-void Silver::moveObjectX(const string& name, const variant<int, vector<int>>& number, int x_offset) {
-    int x=x_offset;
-
-    if (holds_alternative<int>(number)) {
-            int singleNumber = get<int>(number);
-	    if (singleNumber == origin){
-		return; 
-	    }
-	    
-	    else if (singleNumber == all){
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()) {
-		            mesh X = it->second;
-			   
-		            X.object.position += Vec3(x, 0, 0);  
-		            sprites.erase(it); 
-		            sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z},X});
-		        }
-		    }
-		}
-	    }
-	    else {
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name && entry.second.object.number == singleNumber){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()){
-		            mesh X = it->second;
-
-		            X.object.position += Vec3(x, 0, 0);
-		            sprites.erase(it);
-		            sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z},X});
-		        }
-		    }
-		}
-	    }
-	}
-	else {
-		const vector<int>& numbers = get<vector<int>>(number);
-		for (int num : numbers) {
-		    // Handle each number in the array
-		    for (auto& entry : sprites) {
-		        if (entry.second.object.name == name && entry.second.object.number == num) {
-		            auto it = sprites.find(entry.first);
-		            if (it != sprites.end()) {
-		                mesh X = it->second;
-
-		                X.object.position += Vec3{x, 0, 0};  
-		                sprites.erase(it);
-		                sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z}, X});
-		            }
-		        }
-		    }
-		}
-	}
-}
-
-
-void Silver::moveObjectY(const string& name, const variant<int, vector<int>>& number, int y_offset) {
-    int y=y_offset;
-
-    if (holds_alternative<int>(number)) {
-            int singleNumber = get<int>(number);
-	    if (singleNumber == origin){
-		return; 
-	    }
-	    
-	    else if (singleNumber == all){
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()) {
-		            mesh X = it->second;
-			   
-		            X.object.position += Vec3(0, y, 0);  
-		            sprites.erase(it); 
-		            sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z},X});
-		        }
-		    }
-		}
-	    }
-	    else {
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name && entry.second.object.number == singleNumber){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()){
-		            mesh X = it->second;
-
-		            X.object.position += Vec3(0, y, 0);
-		            sprites.erase(it);
-		            sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z},X});
-		        }
-		    }
-		}
-	    }
-	}
-	else {
-		const vector<int>& numbers = get<vector<int>>(number);
-		for (int num : numbers) {
-		    // Handle each number in the array
-		    for (auto& entry : sprites) {
-		        if (entry.second.object.name == name && entry.second.object.number == num) {
-		            auto it = sprites.find(entry.first);
-		            if (it != sprites.end()) {
-		                mesh X = it->second;
-
-		                X.object.position += Vec3{0, y, 0};  
-		                sprites.erase(it);
-		                sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z}, X});
-		            }
-		        }
-		    }
-		}
-	}
-}
-void Silver::setObjectX(const string& name, const variant<int, vector<int>>& number, Vec3 pos) {
-    int x=pos.x;
- 
-    if (holds_alternative<int>(number)) {
-            int singleNumber = get<int>(number);
-	    if (singleNumber == origin){
-		return; 
-	    }
-	    
-	    else if (singleNumber == all){
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()) {
-		            mesh X = it->second;
-		            // Keep the original z value and only update x and y
-		            int y = X.object.position.y;
-		            int z = X.object.position.z;
-		            X.object.position = Vec3(x, y, z);  
-		            sprites.erase(it); 
-		            sprites.insert({{x,y,z},X});
-		        }
-		    }
-		}
-	    }
-	    else {
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name && entry.second.object.number == singleNumber){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()){
-		            mesh X = it->second;
-		            // Keep the original z value and only update x and y
-		            int y = X.object.position.y;
-		            int z = X.object.position.z;
-		            X.object.position = Vec3(x, y, z);
-		            sprites.erase(it);
-		            sprites.insert({{x,y,z},X});
-		        }
-		    }
-		}
-	    }
-	}
-	else {
-		const vector<int>& numbers = get<vector<int>>(number);
-		for (int num : numbers) {
-		    // Handle each number in the array
-		    for (auto& entry : sprites) {
-		        if (entry.second.object.name == name && entry.second.object.number == num) {
-		            auto it = sprites.find(entry.first);
-		            if (it != sprites.end()) {
-		                mesh X = it->second;
-		                int y = X.object.position.y;
-		                int z = X.object.position.z; // Keep the original z value
-		                X.object.position = Vec3{x, y, z};  
-		                sprites.erase(it);
-		                sprites.insert({{x, y, z}, X});
-		            }
-		        }
-		    }
-		}
-	}
-}
-
-
-void Silver::glideObjectXY(string name, const variant <vector <int>, int>& number, Vec3 target_pos, float speed) {
-    int target_x = target_pos.x;
-    int target_y = target_pos.y;
-
-    if(holds_alternative <int> (number)) {
-    	    int singleNumber = get<int>(number);
-	    if (singleNumber == origin) {
-		return;
-	    } 
-	    else if (singleNumber == all) {
-		bool anyMoving;
-		
-		// Move all objects with the given name one step at a time
-		do {
-		    anyMoving = false; // Reset moving flag for each loop iteration
-
-		    for (auto& entry : sprites) {
-		        if (entry.second.object.name == name) {
-		            mesh& X = entry.second;
-
-		            // Get current position
-		            int start_x = X.object.position.x;
-		            int start_y = X.object.position.y;
-
-		            // Calculate the difference in X and Y
-		            int deltaX = abs(target_x - start_x);
-		            int deltaY = abs(target_y - start_y);
-		            int signX = (start_x < target_x) ? 1 : -1;
-		            int signY = (start_y < target_y) ? 1 : -1;
-
-		            int err = deltaX - deltaY;
-
-		            // If object hasn't reached its target, move it one step
-		            if (start_x != target_x || start_y != target_y) {
-		                anyMoving = true;  // At least one object is still moving
-
-		                // Bresenham's line algorithm to calculate next step
-		                int e2 = 2 * err;
-		                if (e2 > -deltaY) {
-		                    err -= deltaY;
-		                    start_x += signX;
-		                }
-		                if (e2 < deltaX) {
-		                    err += deltaX;
-		                    start_y += signY;
-		                }
-
-		                // Move the object one step
-		                silver.setObjectXY(name, entry.second.object.number, Vec2(start_x, start_y));
-		            }
-		        }
-		    }
-
-		    silver.wait(speed);  // Wait between each step for all objects
-
-		} while (anyMoving);  // Continue loop while at least one object is still moving
-	    } 
-	    else {
-		// Move a specific object
-		for (auto& entry : sprites) {
-		    if (entry.second.object.name == name && entry.second.object.number == singleNumber) {
-		        mesh& X = entry.second;
-
-		        // Get current position
-		        int start_x = X.object.position.x;
-		        int start_y = X.object.position.y;
-
-		        // Calculate the difference in X and Y
-		        int deltaX = abs(target_x - start_x);
-		        int deltaY = abs(target_y - start_y);
-		        int signX = (start_x < target_x) ? 1 : -1;
-		        int signY = (start_y < target_y) ? 1 : -1;
-
-		        int err = deltaX - deltaY;
-
-		        // Loop until the object reaches its destination
-		        while (1) {
-		            silver.setObjectXY(name, entry.second.object.number, Vec2(start_x, start_y));
-		            if (start_x == target_x && start_y == target_y) break;
-
-		            // Bresenham's line algorithm to calculate next step
-		            int e2 = 2 * err;
-		            if (e2 > -deltaY) {
-		                err -= deltaY;
-		                start_x += signX;
-		            }
-		            if (e2 < deltaX) {
-		                err += deltaX;
-		                start_y += signY;
-		            }
-
-		            silver.wait(speed);  // Wait between each step
-		        }
-		    }
-		}
-	    }
-	} else {
-		bool anyMoving;
-		const vector<int>& numbers = get<vector<int>>(number);
-		
-		// Move all objects with the given name one step at a time
-		do {
-		    anyMoving = false; // Reset moving flag for each loop iteration
-
-		    for (auto& entry : sprites) {
-		        if (entry.second.object.name == name && find(numbers.begin(), numbers.end(), entry.second.object.number) != numbers.end()) {
-		            mesh& X = entry.second;
-
-		            // Get current position
-		            int start_x = X.object.position.x;
-		            int start_y = X.object.position.y;
-
-		            // Calculate the difference in X and Y
-		            int deltaX = abs(target_x - start_x);
-		            int deltaY = abs(target_y - start_y);
-		            int signX = (start_x < target_x) ? 1 : -1;
-		            int signY = (start_y < target_y) ? 1 : -1;
-
-		            int err = deltaX - deltaY;
-
-		            // If object hasn't reached its target, move it one step
-		            if (start_x != target_x || start_y != target_y) {
-		                anyMoving = true;  // At least one object is still moving
-
-		                // Bresenham's line algorithm to calculate next step
-		                int e2 = 2 * err;
-		                if (e2 > -deltaY) {
-		                    err -= deltaY;
-		                    start_x += signX;
-		                }
-		                if (e2 < deltaX) {
-		                    err += deltaX;
-		                    start_y += signY;
-		                }
-
-		                // Move the object one step
-		                silver.setObjectXY(name, entry.second.object.number, Vec2(start_x, start_y));
-		            }
-		        }
-		    } 
-
-		    silver.wait(speed);  // Wait between each step for all objects
-	     }while (anyMoving);
-	} 
-}
-
-
-
-void Silver::glideObjectX(string name, const variant<int, vector<int>>& number, int x_offset, float speed) {
-    if (holds_alternative<int>(number)) {
-            int singleNumber = get<int>(number);
-	    if (singleNumber == origin) {
-		return;
-	    } 
-	    else if (singleNumber == all) {
-		for(int i=0; i<abs(x_offset); i++) {
-			silver.wait(speed);
-			for (auto& entry : sprites) {
-			    if (entry.second.object.name == name) {
-				mesh& X = entry.second;
-				int dir;
-				if(x_offset>0) dir=1;
-				else dir=-1;
-				
-				silver.moveObjectX(X.object.name,X.object.number,dir);
-				
-			    }
-			}
-			
-		} 
-	    } 
-	    else {
-		for(int i=0; i<abs(x_offset); i++) {
-			silver.wait(speed);
-			for (auto& entry : sprites) {
-			    if (entry.second.object.name == name && entry.second.object.number==singleNumber) {
-				mesh& X = entry.second;
-				int dir;
-				if(x_offset>0) dir=1;
-				else dir=-1;
-				
-				silver.moveObjectX(X.object.name,X.object.number,dir);
-				
-			    }
-			}
-			
-		} 
-	    }
-    } else {
-	    const vector<int>& numbers = get<vector<int>>(number);
-	    for(int i = 0; i < abs(x_offset); i++) {
-		silver.wait(speed);
-		for (auto& entry : sprites) {
-		    if (entry.second.object.name == name) {
-		        mesh& X = entry.second;
-		        
-		        // Check if X.object.number is in the vector numbers
-		        if (find(numbers.begin(), numbers.end(), X.object.number) != numbers.end()) {
-		            int dir = (x_offset > 0) ? 1 : -1;
-		            silver.moveObjectX(X.object.name, X.object.number, dir);
-		        }
-		    }
-		}
-	    } 
-	}
-
-}
-
-
-
-void Silver::glideObjectY(string name, const variant<int, vector<int>>& number, int y_offset, float speed) {
-    if (holds_alternative<int>(number)) {
-            int singleNumber = get<int>(number);
-	    if (singleNumber == origin) {
-		return;
-	    } 
-	    else if (singleNumber == all) {
-		for(int i=0; i<abs(y_offset); i++) {
-			silver.wait(speed);
-			for (auto& entry : sprites) {
-			    if (entry.second.object.name == name) {
-				mesh& X = entry.second;
-				int dir;
-				if(y_offset>0) dir=1;
-				else dir=-1;
-				
-				silver.moveObjectY(X.object.name,X.object.number,dir);
-				
-			    }
-			}
-			
-		} 
-	    } 
-	    else {
-		for(int i=0; i<abs(y_offset); i++) {
-			silver.wait(speed);
-			for (auto& entry : sprites) {
-			    if (entry.second.object.name == name && entry.second.object.number==singleNumber) {
-				mesh& X = entry.second;
-				int dir;
-				if(y_offset>0) dir=1;
-				else dir=-1;
-				
-				silver.moveObjectY(X.object.name,X.object.number,dir);
-				
-			    }
-			}
-			
-		} 
-	    }
-    } else {
-	    const vector<int>& numbers = get<vector<int>>(number);
-	    for(int i = 0; i < abs(y_offset); i++) {
-		silver.wait(speed);
-		for (auto& entry : sprites) {
-		    if (entry.second.object.name == name) {
-		        mesh& X = entry.second;
-		        
-		        // Check if X.object.number is in the vector numbers
-		        if (find(numbers.begin(), numbers.end(), X.object.number) != numbers.end()) {
-		            int dir = (y_offset > 0) ? 1 : -1;
-		            silver.moveObjectY(X.object.name, X.object.number, dir);
-		        }
-		    }
-		}
-	    } 
-	}
-
-}
-
-
-void Silver::setObjectY(const string& name, const variant<int, vector<int>>& number, Vec3 pos) {
-    int y=pos.y;
- 
-    if (holds_alternative<int>(number)) {
-            int singleNumber = get<int>(number);
-	    if (singleNumber == origin){
-		return; 
-	    }
-	    
-	    else if (singleNumber == all){
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()) {
-		            mesh X = it->second;
-		            // Keep the original z value and only update x and y
-		            int x = X.object.position.x;
-		            int z = X.object.position.z;
-		            X.object.position = Vec3(x, y, z);  
-		            sprites.erase(it); 
-		            sprites.insert({{x,y,z},X});
-		        }
-		    }
-		}
-	    }
-	    else {
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name && entry.second.object.number == singleNumber){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()){
-		            mesh X = it->second;
-		            // Keep the original z value and only update x and y
-		            int x = X.object.position.x;
-		            int z = X.object.position.z;
-		            X.object.position = Vec3(x, y, z);
-		            sprites.erase(it);
-		            sprites.insert({{x,y,z},X});
-		        }
-		    }
-		}
-	    }
-	}
-	else {
-		const vector<int>& numbers = get<vector<int>>(number);
-		for (int num : numbers) {
-		    // Handle each number in the array
-		    for (auto& entry : sprites) {
-		        if (entry.second.object.name == name && entry.second.object.number == num) {
-		            auto it = sprites.find(entry.first);
-		            if (it != sprites.end()) {
-		                mesh X = it->second;
-		                int x = X.object.position.x;
-		                int z = X.object.position.z; // Keep the original z value
-		                X.object.position = Vec3{x, y, z};  
-		                sprites.erase(it);
-		                sprites.insert({{x, y, z}, X});
-		            }
-		        }
-		    }
-		}
-	}
-}
-
-void Silver::moveObjectXY(const string& name, const variant<int, vector<int>>& number, Vec3 pos) {
-    int x=pos.x;
-    int y=pos.y;
-
-    if (holds_alternative<int>(number)) {
-            int singleNumber = get<int>(number);
-	    if (singleNumber == origin){
-		return; 
-	    }
-	    
-	    else if (singleNumber == all){
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()) {
-		            mesh X = it->second;
-			   
-		            X.object.position += Vec3(x, y, 0);  
-		            sprites.erase(it); 
-		            sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z},X});
-		        }
-		    }
-		}
-	    }
-	    else {
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name && entry.second.object.number == singleNumber){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()){
-		            mesh X = it->second;
-
-		            X.object.position += Vec3(x, y, 0);
-		            sprites.erase(it);
-		            sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z},X});
-		        }
-		    }
-		}
-	    }
-	}
-	else {
-		const vector<int>& numbers = get<vector<int>>(number);
-		for (int num : numbers) {
-		    // Handle each number in the array
-		    for (auto& entry : sprites) {
-		        if (entry.second.object.name == name && entry.second.object.number == num) {
-		            auto it = sprites.find(entry.first);
-		            if (it != sprites.end()) {
-		                mesh X = it->second;
-
-		                X.object.position += Vec3{x, y, 0};  
-		                sprites.erase(it);
-		                sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z}, X});
-		            }
-		        }
-		    }
-		}
-	}
-}
-
-void Silver::glideObjectRandom(const string& name, variant<int, vector<int>>& number, Vec3 position, float speed) {
-    static bool seeded = false;
-    if (!seeded) {
-        srand(static_cast<unsigned>(time(0))); 
-        seeded = true;
-    }
+    vector<tuple<int, int, int>> keysToUpdate;
 
     if (holds_alternative<int>(number)) {
         int singleNumber = get<int>(number);
-        
         if (singleNumber == origin) {
             return;
+        } else if (singleNumber == all) {
+            for (auto& entry : sprites) {
+                if (name == pointer) {
+                    if (entry.second.objectPointer) {
+                        keysToUpdate.push_back(entry.first);
+                    }
+                } else if (name == entry.second.object.name) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
         } else {
-            int randomX = rand() % WorldX;  
-            int randomY = rand() % WorldY; 
+            for (auto& entry : sprites) {
+                if (name == pointer) {
+                    if (entry.second.objectPointer == singleNumber) {
+                        keysToUpdate.push_back(entry.first);
+                    }
+                } else if (entry.second.object.name == name && entry.second.object.number == singleNumber) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        }
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        unordered_set<int> numberSet(numbers.begin(), numbers.end());
+
+        for (auto& entry : sprites) {
+            if (name == pointer) {
+                if (numberSet.count(entry.second.objectPointer)) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            } else if (entry.second.object.name == name && numberSet.count(entry.second.object.number)) {
+                keysToUpdate.push_back(entry.first);
+            }
+        }
+    }
+
+    for (auto& key : keysToUpdate) {
+        auto it = sprites.find(key);
+        if (it != sprites.end()) {
+            mesh& X = it->second;
+            int z = X.object.position.z;
+
+            X.object.position = {x, y, z};
+
+            sprites.erase(it);
+            sprites.insert({{x, y, z}, X});
+        }
+    }
+}
+
+void Silver::setObjectPosition(const string& name, const variant<int, vector<int>>& number, Vec3 pos) {
+    int x = pos.x;
+    int y = pos.y;
+    int z = pos.z;
+
+    vector<tuple<int, int, int>> keysToUpdate; 
+
+    if (holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) {
+            return;
+        }
+
+        if (singleNumber == all) {
+            for (auto& entry : sprites) {
+                if (entry.second.object.name == name) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        } else {
+            for (auto& entry : sprites) {
+                if (entry.second.object.name == name && entry.second.object.number == singleNumber) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        }
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        unordered_set<int> numberSet(numbers.begin(), numbers.end());
+
+        for (auto& entry : sprites) {
+            if (entry.second.object.name == name && numberSet.count(entry.second.object.number)) {
+                keysToUpdate.push_back(entry.first);
+            }
+        }
+    }
+
+    for (const auto& key : keysToUpdate) {
+        auto it = sprites.find(key);
+        if (it != sprites.end()) {
+            mesh& X = it->second;
+	    X.object.position = {x, y, z};
+
+	    sprites.erase(it); 
+	    sprites.insert({{x, y, z}, X}); 
+
+        }
+    }
+}
+
+void Silver::moveObjectXY(const string& name, const variant<int, vector<int>>& number, Vec3 pos) {
+    int dx = pos.x;
+    int dy = pos.y;
+
+    vector<tuple<int, int, int>> keysToUpdate; 
+
+    if (holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) {
+            return;
+        }
+
+        if (singleNumber == all) {
+            for (auto& entry : sprites) {
+                if (entry.second.object.name == name) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        } else {
+            for (auto& entry : sprites) {
+                if (entry.second.object.name == name && entry.second.object.number == singleNumber) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        }
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        unordered_set<int> numberSet(numbers.begin(), numbers.end());
+
+        for (auto& entry : sprites) {
+            if (entry.second.object.name == name && numberSet.count(entry.second.object.number)) {
+                keysToUpdate.push_back(entry.first);
+            }
+        }
+    }
+
+    for (const auto& key : keysToUpdate) {
+	    auto it = sprites.find(key);
+	    if (it != sprites.end()) {
+		mesh& X = it->second;
+		X.object.position += Vec3(dx, dy, 0);
+		int x=X.object.position.x+dx;
+		int y=X.object.position.x+dy;
+		int z=X.object.position.x;
+		sprites.erase(it);
+		sprites.insert({{x,y,z}, X});
+	    }
+    }
+
+}
+
+void Silver::moveObjectPosition(const string& name, const variant<int, vector<int>>& number, Vec3 pos) {
+    int dx = pos.x;
+    int dy = pos.y;
+    int dz = pos.z;
+
+    vector<tuple<int, int, int>> keysToUpdate; 
+
+    if (holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) {
+            return;
+        }
+
+        if (singleNumber == all) {
+            for (auto& entry : sprites) {
+                if (entry.second.object.name == name) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        } else {
+            for (auto& entry : sprites) {
+                if (entry.second.object.name == name && entry.second.object.number == singleNumber) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        }
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        unordered_set<int> numberSet(numbers.begin(), numbers.end());
+
+        for (auto& entry : sprites) {
+            if (entry.second.object.name == name && numberSet.count(entry.second.object.number)) {
+                keysToUpdate.push_back(entry.first);
+            }
+        }
+    }
+
+    for (const auto& key : keysToUpdate) {
+	    auto it = sprites.find(key);
+	    if (it != sprites.end()) {
+		mesh& X = it->second;
+		X.object.position += Vec3(dx, dy, dz);
+		int x=X.object.position.x+dx;
+		int y=X.object.position.x+dy;
+		int z=X.object.position.x+dz;
+		sprites.erase(it);
+		sprites.insert({{x,y,z}, X});
+	    }
+    }
+
+}
+
+void Silver::moveObjectX(const string& name, const variant<int, vector<int>>& number, int x_offset) {
+    int dx = x_offset;
+    vector<tuple<int, int, int>> keysToUpdate;
+
+    if (holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) {
+            return;
+        } else if (singleNumber == all) {
+            for (const auto& entry : sprites) {
+                if (name == pointer) {
+                    if (entry.second.objectPointer) {
+                        keysToUpdate.push_back(entry.first);
+                    }
+                } else if (entry.second.object.name == name) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        } else {
+            for (const auto& entry : sprites) {
+                if (name == pointer) {
+                    if (entry.second.objectPointer == singleNumber) {
+                        keysToUpdate.push_back(entry.first);
+                    }
+                } else if (entry.second.object.name == name && entry.second.object.number == singleNumber) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        }
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        for (const auto& entry : sprites) {
+            if (name == pointer) {
+                if (find(numbers.begin(), numbers.end(), entry.second.objectPointer) != numbers.end()) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            } else if (entry.second.object.name == name &&
+                       find(numbers.begin(), numbers.end(), entry.second.object.number) != numbers.end()) {
+                keysToUpdate.push_back(entry.first);
+            }
+        }
+    }
+
+    for (const auto& key : keysToUpdate) {
+        auto it = sprites.find(key);
+        if (it != sprites.end()) {
+            mesh X = it->second;
+            X.object.position += Vec3(dx, 0, 0);
+            int x = X.object.position.x;
+            int y = X.object.position.y;
+            int z = X.object.position.z;
+            sprites.erase(it);
+            sprites.insert({{x, y, z}, X});
+        }
+    }
+}
+
+void Silver::moveObjectY(const string& name, const variant<int, vector<int>>& number, int y_offset) {
+    int dy = y_offset;
+    vector<tuple<int, int, int>> keysToUpdate;
+
+    if (holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) {
+            return;
+        } else if (singleNumber == all) {
+            for (const auto& entry : sprites) {
+                if (name == pointer) {
+                    if (entry.second.objectPointer) {
+                        keysToUpdate.push_back(entry.first);
+                    }
+                } else if (entry.second.object.name == name) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        } else {
+            for (const auto& entry : sprites) {
+                if (name == pointer) {
+                    if (entry.second.objectPointer == singleNumber) {
+                        keysToUpdate.push_back(entry.first);
+                    }
+                } else if (entry.second.object.name == name && entry.second.object.number == singleNumber) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        }
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        for (const auto& entry : sprites) {
+            if (name == pointer) {
+                if (find(numbers.begin(), numbers.end(), entry.second.objectPointer) != numbers.end()) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            } else if (entry.second.object.name == name &&
+                       find(numbers.begin(), numbers.end(), entry.second.object.number) != numbers.end()) {
+                keysToUpdate.push_back(entry.first);
+            }
+        }
+    }
+
+    for (const auto& key : keysToUpdate) {
+        auto it = sprites.find(key);
+        if (it != sprites.end()) {
+            mesh X = it->second;
+            X.object.position += Vec3(0, dy, 0);
+            int x = X.object.position.x;
+            int y = X.object.position.y;
+            int z = X.object.position.z;
+            sprites.erase(it);
+            sprites.insert({{x, y, z}, X});
+        }
+    }
+}
+void Silver::setObjectX(const string& name, const variant<int, vector<int>>& number, int x) {
+    vector<tuple<int, int, int>> keysToUpdate;
+
+    if (holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) {
+            return;
+        } else if (singleNumber == all) {
+            for (const auto& entry : sprites) {
+                if (name == pointer) {
+                    if (entry.second.objectPointer) {
+                        keysToUpdate.push_back(entry.first);
+                    }
+                } else if (entry.second.object.name == name) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        } else {
+            for (const auto& entry : sprites) {
+                if (name == pointer) {
+                    if (entry.second.objectPointer == singleNumber) {
+                        keysToUpdate.push_back(entry.first);
+                    }
+                } else if (entry.second.object.name == name && entry.second.object.number == singleNumber) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        }
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        for (const auto& entry : sprites) {
+            if (name == pointer) {
+                if (find(numbers.begin(), numbers.end(), entry.second.objectPointer) != numbers.end()) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            } else if (entry.second.object.name == name &&
+                       find(numbers.begin(), numbers.end(), entry.second.object.number) != numbers.end()) {
+                keysToUpdate.push_back(entry.first);
+            }
+        }
+    }
+
+    for (const auto& key : keysToUpdate) {
+        auto it = sprites.find(key);
+        if (it != sprites.end()) {
+            mesh X = it->second;
+            int y = X.object.position.y;
+            int z = X.object.position.z;
+            X.object.position = Vec3(x, y, z);
+            sprites.erase(it);
+            sprites.insert({{x, y, z}, X});
+        }
+    }
+}
+void Silver::glideObjectX(string name, const variant<int, vector<int>>& number, int x_offset, float speed) {
+    int dir = (x_offset > 0) ? 1 : -1;
+
+    if (holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) return;
+
+        vector<string> keysToUpdate;
+
+        for (const auto& entry : sprites) {
+            if ((name == pointer && entry.second.objectPointer == singleNumber) || 
+                (entry.second.object.name == name && (singleNumber == all || entry.second.object.number == singleNumber))) {
+                keysToUpdate.push_back(entry.second.object.name);
+            }
+        }
+
+        for (int i = 0; i < abs(x_offset); i++) {
+            silver.wait(speed);
+
+            for (const auto& key : keysToUpdate) {
+                silver.moveObjectX(key, singleNumber, dir);
+            }
+        }
+
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        vector<pair<string, int>> objectsToMove;
+
+        for (const auto& entry : sprites) {
+            if ((name == pointer && find(numbers.begin(), numbers.end(), entry.second.objectPointer) != numbers.end()) || 
+                (entry.second.object.name == name && find(numbers.begin(), numbers.end(), entry.second.object.number) != numbers.end())) {
+                objectsToMove.push_back(make_pair(entry.second.object.name, entry.second.object.number));
+            }
+        }
+
+        for (int i = 0; i < abs(x_offset); i++) {
+            silver.wait(speed);
+
+            for (const auto& [key, num] : objectsToMove) {
+                silver.moveObjectX(key, num, dir);
+            }
+        }
+    }
+}
+
+void Silver::glideObjectY(string name, const variant<int, vector<int>>& number, int y_offset, float speed) {
+    int dir = (y_offset > 0) ? 1 : -1;
+
+    if (holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) return;
+
+        vector<string> keysToUpdate;
+
+        for (const auto& entry : sprites) {
+            if ((name == pointer && entry.second.objectPointer == singleNumber) || 
+                (entry.second.object.name == name && (singleNumber == all || entry.second.object.number == singleNumber))) {
+                keysToUpdate.push_back(entry.second.object.name);
+            }
+        }
+
+        for (int i = 0; i < abs(y_offset); i++) {
+            silver.wait(speed);
+
+            for (const auto& key : keysToUpdate) {
+                silver.moveObjectY(key, singleNumber, dir);
+            }
+        }
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        vector<pair<string, int>> objectsToMove;
+
+        for (const auto& entry : sprites) {
+            if ((name == pointer && find(numbers.begin(), numbers.end(), entry.second.objectPointer) != numbers.end()) || 
+                (entry.second.object.name == name && find(numbers.begin(), numbers.end(), entry.second.object.number) != numbers.end())) {
+                objectsToMove.push_back(make_pair(entry.second.object.name, entry.second.object.number));
+            }
+        }
+
+        for (int i = 0; i < abs(y_offset); i++) {
+            silver.wait(speed);
+
+            for (const auto& [key, num] : objectsToMove) {
+                silver.moveObjectY(key, num, dir);
+            }
+        }
+    }
+}
+void Silver::setObjectY(const string& name, const variant<int, vector<int>>& number, int y) {
+    vector<tuple<int, int, int>> keysToUpdate;
+
+    if (holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) {
+            return;
+        }
+
+        if (singleNumber == all) {
+            for (const auto& entry : sprites) {
+                if ((name == pointer && entry.second.objectPointer) || entry.second.object.name == name) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        } else {
+            for (const auto& entry : sprites) {
+                if ((name == pointer && entry.second.objectPointer == singleNumber) || 
+                    (entry.second.object.name == name && entry.second.object.number == singleNumber)) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        }
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        for (const auto& entry : sprites) {
+            if ((name == pointer && find(numbers.begin(), numbers.end(), entry.second.objectPointer) != numbers.end()) || 
+                (entry.second.object.name == name && find(numbers.begin(), numbers.end(), entry.second.object.number) != numbers.end())) {
+                keysToUpdate.push_back(entry.first);
+            }
+        }
+    }
+
+    for (const auto& key : keysToUpdate) {
+        auto it = sprites.find(key);
+        if (it != sprites.end()) {
+            mesh& currentMesh = it->second;
+            int x = currentMesh.object.position.x;
+            int z = currentMesh.object.position.z;
+
+            currentMesh.object.position.y = y;
+
+            auto value = currentMesh;
+            sprites.erase(it);
+            sprites.insert({{x, y, z}, value});
+        }
+    }
+}
+void Silver::glideObjectXY(string name, const variant<vector<int>, int>& number, Vec3 target_pos, float speed, ...) {
+    va_list args;
+    va_start(args, speed);
+    bool setPosition = false;
+
+    if (va_arg(args, int)) {
+        setPosition = true;
+    }
+
+    va_end(args);
+
+    vector<tuple<int, int, int>> keysToUpdate;
+
+    if (holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) {
+            return;
+        } else if (singleNumber == all) {
+            for (const auto& entry : sprites) {
+                if ((name == pointer && entry.second.objectPointer==singleNumber) || entry.second.object.name == name) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        } else {
+            for (const auto& entry : sprites) {
+                if ((name == pointer && entry.second.objectPointer == singleNumber) || 
+                    (entry.second.object.name == name && entry.second.object.number == singleNumber)) {
+                    keysToUpdate.push_back(entry.first);
+                }
+            }
+        }
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        for (const auto& entry : sprites) {
+            if ((name == pointer && find(numbers.begin(), numbers.end(), entry.second.objectPointer) != numbers.end()) || 
+                (entry.second.object.name == name && find(numbers.begin(), numbers.end(), entry.second.object.number) != numbers.end())) {
+                keysToUpdate.push_back(entry.first);
+            }
+        }
+    }
+
+    for (const auto& key : keysToUpdate) {
+        auto it = sprites.find(key);
+        if (it != sprites.end()) {
+            mesh& X = it->second;
+
+            int start_x = X.object.position.x;
+            int start_y = X.object.position.y;
+
+            int target_x = setPosition ? target_pos.x : start_x + target_pos.x;
+            int target_y = setPosition ? target_pos.y : start_y + target_pos.y;
+
+            int deltaX = abs(target_x - start_x);
+            int deltaY = abs(target_y - start_y);
+
+            int signX = (start_x < target_x) ? 1 : -1;
+            int signY = (start_y < target_y) ? 1 : -1;
+
+            int err = deltaX - deltaY;
+
+            while (start_x != target_x || start_y != target_y) {
+
+                int e2 = 2 * err;
+                if (e2 > -deltaY) {
+                    err -= deltaY;
+                    start_x += signX;
+                }
+                if (e2 < deltaX) {
+                    err += deltaX;
+                    start_y += signY;
+                }
+		silver.setObjectXY(name, X.object.number, Vec2(start_x,start_y));
+                silver.wait(speed);
+            }
+
+            silver.setObjectXY(name, X.object.number, Vec2(target_x,target_y));
+        }
+    }
+}
+
+void Silver::glideObjectRandom(const string& name, const variant<int, vector<int>>& number, float speed) {
+    static bool seeded = false;
+    if (!seeded) {
+        srand(static_cast<unsigned>(time(0)));
+        seeded = true;
+    }
+
+    int randomX = rand() % WorldX;  
+    int randomY = rand() % WorldY;
+
+    if (holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) return;
+
+        if (name == pointer) {
+            glideObjectXY(pointer, singleNumber, Vec2(randomX, randomY), speed);
+        } else {
             glideObjectXY(name, singleNumber, Vec2(randomX, randomY), speed);
         }
     } else {
-    	const vector<int>& numbers = get<vector<int>>(number);
-        int randomX = rand() % WorldX;  
-        int randomY = rand() % WorldY; 
-        glideObjectXY(name, numbers, Vec2(randomX, randomY), speed);
+        const vector<int>& numbers = get<vector<int>>(number);
+
+        if (name == pointer) {
+            glideObjectXY(pointer, numbers, Vec2(randomX, randomY), speed);
+        } else {
+            glideObjectXY(name, numbers, Vec2(randomX, randomY), speed);
+        }
     }
 }
-
 
 void Silver::setObjectRandom(const string& name, const variant<int, vector<int>>& number) {
-    // Seed the random number generator
-    srand(static_cast<unsigned>(time(0)));
+    static bool seeded = false;
+    if (!seeded) {
+        srand(static_cast<unsigned>(time(0)));
+        seeded = true;
+    }
 
-    // Lambda function to randomize object position
-    auto randomizePosition = [this](auto& entry) {
-        int randomX = rand() % WorldX;
-        int randomY = rand() % WorldY;
-        entry.object.position.x = randomX;
-        entry.object.position.y = randomY;
-    };
+    int randomX = rand() % WorldX;  
+    int randomY = rand() % WorldY;
 
-    // If the number is a single integer
     if (holds_alternative<int>(number)) {
-        int num = get<int>(number);
+        int singleNumber = get<int>(number);
+        if (singleNumber == origin) return;
 
-        if (num == origin) {
-            return;
-        } 
-        else if (num == all) {
-            // Randomize position of all objects with the specified name
-            for (auto& entry : sprites) {
-                if (entry.second.object.name == name) {
-                    auto it = sprites.find(entry.first);
-                    if (it != sprites.end()) {
-                        randomizePosition(it->second);
-                        // Re-insert into the map based on new coordinates
-                        sprites.erase(it);
-                        sprites.insert({{it->second.object.position.x, it->second.object.position.y, it->second.object.position.z}, it->second});
-                    }
-                }
-            }
-        } 
-        else {
-            // Randomize position for objects with a matching name and number
-            for (auto& entry : sprites) {
-                if (entry.second.object.name == name && entry.second.object.number == num) {
-                    auto it = sprites.find(entry.first);
-                    if (it != sprites.end()) {
-                        randomizePosition(it->second);
-                        // Re-insert into the map based on new coordinates
-                        sprites.erase(it);
-                        sprites.insert({{it->second.object.position.x, it->second.object.position.y, it->second.object.position.z}, it->second});
-                    }
-                }
-            }
+        if (name == pointer) {
+            setObjectXY(pointer, singleNumber, Vec2(randomX, randomY));
+        } else {
+            setObjectXY(name, singleNumber, Vec2(randomX, randomY));
         }
-    } 
-    // If the number is a vector of integers
-    else if (holds_alternative<vector<int>>(number)) {
-        vector<int> numList = get<vector<int>>(number);
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
 
-        // Randomize positions for all objects with matching name and any number in the vector
-        for (auto& entry : sprites) {
-            if (entry.second.object.name == name && find(numList.begin(), numList.end(), entry.second.object.number) != numList.end()) {
-                auto it = sprites.find(entry.first);
-                if (it != sprites.end()) {
-                    randomizePosition(it->second);
-                    // Re-insert into the map based on new coordinates
-                    sprites.erase(it);
-                    sprites.insert({{it->second.object.position.x, it->second.object.position.y, it->second.object.position.z}, it->second});
-                }
-            }
+        if (name == pointer) {
+            setObjectXY(pointer, numbers, Vec2(randomX, randomY));
+        } else {
+            setObjectXY(name, numbers, Vec2(randomX, randomY));
         }
     }
 }
 
-struct termios orig_termios; // Store the original terminal settings
+struct termios orig_termios; 
 
-
-// Set terminal to raw mode
 void Silver::setRawMode() {
-struct termios raw;
+	struct termios raw;
 
-// Get and save the original terminal attributes
-tcgetattr(STDIN_FILENO, &orig_termios);
+	tcgetattr(STDIN_FILENO, &orig_termios);
 
-// Modify terminal attributes for raw mode
-raw = orig_termios; // Start with the original settings
-raw.c_lflag &= ~(ICANON | ECHO); // Disable canonical mode and echo
+	raw = orig_termios; 
+	raw.c_lflag &= ~(ICANON | ECHO); 
 
-// Set the terminal attributes to raw mode
-tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
-// Restore terminal to original settings
 void Silver::resetMode() {
-// Restore the original terminal attributes
-tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
 }
 
-
-
-void Silver::tRun(function<void()> func){
+void Silver::Threading::tRun(function<void()> func) {
     thread t(func);
     t.detach();
 }
 
-void Silver::dRun(function<void()> func, float time){
+void Silver::Threading::dRun(function<void()> func, float time) {
     thread t([func, time]() {
         this_thread::sleep_for(chrono::milliseconds(static_cast<int>(time)));
         func();
@@ -1859,90 +1964,517 @@ void Silver::dRun(function<void()> func, float time){
     t.detach();
 }
 
-vector<Vec3*> Silver::spriteLocation(const string& spriteName, int number) {
-    static vector<Vec3*> locations; 
-    locations.clear(); 
+void Silver::Threading::createThread(const string& name, function<void()> func) {
+    lock_guard<mutex> lock(thread_mutex);
 
-    for (auto& entry : sprites) {
-        if (entry.second.object.name == spriteName && (number == all || entry.second.object.number == number)) {
-            locations.push_back(&entry.second.object.position);
+    if (threads.find(name) != threads.end()) return; 
+
+    auto threadInfo = make_shared<ThreadInfo>();
+
+    threadInfo->t = thread([this, name, func, threadInfo]() {
+        unique_lock<mutex> lock(threadInfo->mtx);
+        while (!threadInfo->stop) {
+
+            if (threadInfo->paused) {
+                threadInfo->cv.wait(lock); 
+            } else {
+                func(); 
+                break; 
+            }
+        }
+    });
+
+    threads[name] = threadInfo; 
+}
+
+void Silver::Threading::destroyThread(const string& name) {
+    lock_guard<mutex> lock(thread_mutex);
+    if (threads.find(name) != threads.end()) {
+        {
+            lock_guard<mutex> th_lock(threads[name]->mtx);
+	    threads[name]->stop = true;
+	    threads[name]->cv.notify_all();
+
+        }
+        if (threads[name]->t.joinable()) threads[name]->t.join();
+        threads.erase(name);
+    }
+}
+
+void Silver::Threading::stopAllThreads() {
+    lock_guard<mutex> lock(thread_mutex);
+    for (auto& pair : threads) {
+        {
+            lock_guard<mutex> th_lock(pair.second->mtx);
+	    pair.second->stop = true;
+	    pair.second->cv.notify_all();
+
+        }
+        if (pair.second->t.joinable()) pair.second->t.join();
+    }
+    threads.clear();
+}
+
+void Silver::Threading::pauseThread(const string& name) {
+    lock_guard<mutex> lock(thread_mutex);
+    if (threads.find(name) != threads.end() && !threads[name]->paused) {
+        lock_guard<mutex> th_lock(threads[name]->mtx);
+	threads[name]->paused = true;
+
+    }
+}
+
+void Silver::Threading::resumeThread(const string& name) {
+    lock_guard<mutex> lock(thread_mutex);
+    if (threads.find(name) != threads.end() && threads[name]->paused) {
+
+        lock_guard<mutex> th_lock(threads[name]->mtx);
+	threads[name]->paused = false;
+	threads[name]->cv.notify_all();
+
+    }
+}
+
+vector<Vec3> Silver::getOvalPoints(Vec3 center, Vec3 scale) {
+    vector<Vec3> points;
+    for (int y = center.y - scale.y; y <= center.y + scale.y; ++y) {
+        for (int x = center.x - scale.x; x <= center.x + scale.x; ++x) {
+            int dx = x - center.x;
+            int dy = y - center.y;
+            if ((dx * dx) * (scale.y * scale.y) + (dy * dy) * (scale.x * scale.x) <= (scale.x * scale.x * scale.y * scale.y)) {
+                points.push_back({x, y, center.z});
+            }
+        }
+    }
+    return points;
+}
+
+vector<Vec3> Silver::getOvalHollowPoints(Vec3 center, Vec3 scale) {
+    vector<Vec3> points;
+    for (int y = center.y - scale.y; y <= center.y + scale.y; ++y) {
+        for (int x = center.x - scale.x; x <= center.x + scale.x; ++x) {
+            int dx = x - center.x;
+            int dy = y - center.y;
+
+            bool outer = ((dx * dx) * (scale.y * scale.y) + (dy * dy) * (scale.x * scale.x) <= (scale.x * scale.x * scale.y * scale.y));
+            scale.x--;
+            scale.y--;
+            bool inner = ((dx * dx) * (scale.y * scale.y) + (dy * dy) * (scale.x * scale.x) <= (scale.x * scale.x * scale.y * scale.y));
+            scale.x++;
+            scale.y++;
+
+            if (outer && !inner) {
+                points.push_back({x, y, center.z});
+            }
+        }
+    }
+    return points;
+}
+
+vector<Vec3> Silver::getLinePoints(Vec3 start, Vec3 end) {
+    vector<Vec3> points;
+
+    int x1 = start.x;
+    int y1 = start.y;
+    int x2 = end.x;
+    int y2 = end.y;
+
+    int dx = abs(x2 - x1);
+    int dy = abs(y2 - y1);
+    int sx = (x1 < x2) ? 1 : -1; 
+    int sy = (y1 < y2) ? 1 : -1;
+    int err = dx - dy;
+
+    while (true) {
+        points.push_back({x1, y1, start.z}); 
+        if (x1 == x2 && y1 == y2) break;
+
+        int e2 = err * 2;
+        if (e2 > -dy) {
+            err -= dy;
+            x1 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y1 += sy;
         }
     }
 
-    // Return the first element if there's exactly one, or nullptr if empty
+    return points;
+}
+
+vector<Vec3> Silver::getRectanglePoints(Vec3 topLeft, int width, int height) {
+    vector<Vec3> points;
+    for (int i = 0; i < width; ++i) {
+        for (int j = 0; j < height; ++j) {
+            points.push_back({topLeft.x + i, topLeft.y + j, topLeft.z});
+        }
+    }
+    return points;
+}
+vector<Vec3> Silver::getRectangleHollowPoints(Vec3 topLeft, int width, int height) {
+    vector<Vec3> points;
+
+    for (int i = 0; i < width; ++i) {
+        points.push_back({topLeft.x + i, topLeft.y, topLeft.z});                       
+        points.push_back({topLeft.x + i, topLeft.y + height - 1, topLeft.z});           
+    }
+
+    for (int j = 1; j < height - 1; ++j) {
+        points.push_back({topLeft.x, topLeft.y + j, topLeft.z});                       
+        points.push_back({topLeft.x + width - 1, topLeft.y + j, topLeft.z});           
+    }
+
+    return points;
+}
+
+vector<Vec3> Silver::getLocation(const string& name, int number) {
+    vector<Vec3> locations; 
+
+    for (auto& entry : sprites) {
+        if(name==pointer) {
+            if(entry.second.objectPointer==number) {
+                locations.push_back(entry.second.object.position); 
+            }
+            continue;
+        }
+        if (entry.second.object.name == name && (number == all || entry.second.object.number == number)) {
+            locations.push_back(entry.second.object.position); 
+        }
+    }
+
+    return locations;
+
+}
+bool isAlive(int obj) {
+    for(auto& entry : sprites) {
+    	if(entry.second.objectPointer==obj) return true;
+    } 
+    return false;
+}
+
+void Silver::Threading::applyFunction(const string& name, int number, function<void(int)> func, char mode, ...) {
+    vector<int> targetObjects;
+    int key = 0;
+    Vec3 pos = {0, 0, 0};
+    va_list args;
+    va_start(args, mode);
+
+    if (mode == 'k') {
+        key = va_arg(args, int);
+    } else if (mode == 'm' || mode == 'c' || mode == 'C') {
+        key = silver.mouse.mouseKey;
+        if (mode == 'c') pos = va_arg(args, Vec3);
+        if (mode == 'C') pos = silver.camera.getScreenPosition(silver.getLocation(name, number)[0]);
+    } else if (mode == 'h' || mode == 'H') {
+        if (mode == 'h') pos = va_arg(args, Vec3);
+        if (mode == 'H') pos = silver.camera.getScreenPosition(silver.getLocation(name, number)[0]);
+    }
+    va_end(args);
+
+    if (name == pointer) {
+        for (const auto& entry : sprites) {
+            if (entry.second.objectPointer == number) {
+                targetObjects.push_back(entry.second.objectPointer);
+            }
+        }
+    } else {
+        for (const auto& entry : sprites) {
+            if (entry.second.object.name == name && (number ==  all || entry.second.object.number == number)) {
+                targetObjects.push_back(entry.second.objectPointer);
+            }
+        }
+    }
+
+    if (targetObjects.empty()) {
+        return; 
+    }
+
+    for (int obj : targetObjects) {
+        lock_guard<mutex> lock(thread_mutex); 
+
+        activeThreads.emplace_back([obj, func, mode, key, pos]() {
+            while (isAlive(obj)) {
+                if (mode == 'k' || mode == 'm' || mode == 'c' || mode == 'C') {
+                    while (true) {
+                        silver.keyboard.getKey();
+                        if (silver.keyboard.isKey(key)) {
+                            if (mode == 'c' || mode == 'C') {
+                                Vec3 cursorPosition = {silver.mouse.cursorPositionX, silver.mouse.cursorPositionY, 0};
+                                if (cursorPosition == pos) {  
+                                    break;
+                                }
+                            } else {
+                                break;  
+                            }
+                        }
+
+                    }
+                } 
+                if (mode == 'h' || mode == 'H') {
+                    while (true) {
+                        Vec3 cursorPosition = {silver.mouse.cursorPositionX, silver.mouse.cursorPositionY, 0};
+                        if (cursorPosition.x == pos.x && cursorPosition.y == pos.y) {  
+                            break;
+                        }
+
+                    }
+                }
+                func(obj); 
+
+            }
+        });
+    }
+}
+
+vector<int> Silver::getLocationY(const string& name, int number) {
+    vector<int> locations; 
+
+    for (auto& entry : sprites) {
+        if(name==pointer) {
+            if(entry.second.objectPointer==number) {
+                locations.push_back(entry.second.object.position.y); 
+            }
+            continue;
+        }
+        if (entry.second.object.name == name && (number == all || entry.second.object.number == number)) {
+            locations.push_back(entry.second.object.position.y); 
+        }
+    }
+
+    return locations;
+}
+
+vector<int> Silver::getLocationZ(const string& name, int number) {
+    vector<int> locations;
+
+    for (auto& entry : sprites) {
+        if(name==pointer) {
+            if(entry.second.objectPointer==number) {
+                locations.push_back(entry.second.object.position.z); 
+            }
+            continue;
+        }
+        if (entry.second.object.name == name && (number == all || entry.second.object.number == number)) {
+            locations.push_back(entry.second.object.position.z); 
+        }
+    }
+
     return locations;
 }
 
 void Silver::setObjectPositionToSprite(const string& name, const variant<int, vector<int>>& number,
                                        const string& target, int targetNumber) {
-    Vec3* targetLocation = spriteLocation(target, targetNumber)[0];
+    Vec3 targetLocation = getLocation(target, targetNumber)[0];
 
-    if (targetLocation != nullptr) {
-        // If number is an integer
         if (holds_alternative<int>(number)) {
-            moveObjectPosition(name, get<int>(number), *targetLocation);
-        }
-        // If number is a vector of integers
-        else if (holds_alternative<vector<int>>(number)) {
-            vector<int> numList = get<vector<int>>(number);
+            moveObjectPosition(name, get<int>(number), targetLocation);
+        } else {
+            const vector<int>& numList = get<vector<int>>(number);
             for (int num : numList) {
-                moveObjectPosition(name, num, *targetLocation);  // Move each one to the same target location
+                moveObjectPosition(name, num, targetLocation);
             }
         }
-    }
+
 }
 
 void Silver::glideObjectPositionToSprite(const string& name, const variant<int, vector<int>>& number,
                                          const string& target, int targetNumber, float speed) {
-    Vec3* targetLocation = spriteLocation(target, targetNumber)[0];
+    Vec3 targetLocation = getLocation(target, targetNumber)[0];
 
-    if (targetLocation != nullptr) {
-        // If number is an integer
         if (holds_alternative<int>(number)) {
-            glideObjectXY(name, get<int>(number), *targetLocation, speed);
-        }
-        // If number is a vector of integers
-        else if (holds_alternative<vector<int>>(number)) {
-            vector<int> numList = get<vector<int>>(number);
+            glideObjectXY(name, get<int>(number), targetLocation, speed);
+        } else {
+            const vector<int>& numList = get<vector<int>>(number);
             for (int num : numList) {
-                glideObjectXY(name, num, *targetLocation, speed);  // Glide each one to the same target location
+                glideObjectXY(name, num, targetLocation, speed);  
+            }
+        }
+
+}
+
+void Silver::bringToTop(const string& name, int number) {
+    if (number == origin) {
+        return;
+    }
+
+    auto bringSpriteToTop = [&](auto& entry) {
+        mesh X = entry.second;
+        X.object.position.z = 0;  
+        sprites.erase(entry.first);
+        sprites.insert({{X.object.position.x, X.object.position.y, 0}, X});
+    };
+
+    if (number == all) {
+        for (auto& entry : sprites) {
+            if (entry.second.object.name == name) {
+                bringSpriteToTop(entry);
+            }
+        }
+    } else {
+        for (auto& entry : sprites) {
+            if (entry.second.object.name == name && entry.second.object.number == number) {
+                bringSpriteToTop(entry);
             }
         }
     }
 }
 
-void Silver::bringToTop(const string& name, int number){
-	if (number == origin){
-		return; 
-	    }
-	    else if (number == all){
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()) {
-		            mesh X = it->second;
+void Silver::applyTag(const string& name, const variant<int, vector<int>>& number, const string& tag) {
+    auto addTagToSprite = [&](auto& entry, int num) {
+        if (entry.second.object.name == name && (num == all || entry.second.object.number == num)) {
+            entry.second.object.tags.push_back(tag);
+        }
+    };
 
-		            X.object.position.z = 0;
-		            sprites.erase(it); 
-		            sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z},X});
-		        }
-		    }
-		}
-	    }
-	    else{
-		for (auto& entry : sprites){
-		    if (entry.second.object.name == name && entry.second.object.number == number){
-		        auto it = sprites.find(entry.first);
-		        if (it != sprites.end()){
-		            mesh X = it->second;
+    if (holds_alternative<int>(number)) {
+        int num = get<int>(number);
 
-		            X.object.position.z = 0;
-		            sprites.erase(it);
-		            sprites.insert({{X.object.position.x, X.object.position.y, X.object.position.z},X});
-		        }
-		    }
-		}
-	    }
+        if (num == origin) {
+            for (auto& entry : globalObjects) {
+                if (entry.second.name == name) {
+                    entry.second.tags.push_back(tag);
+                }
+            }
+        } else {
+            for (auto& entry : sprites) {
+                addTagToSprite(entry, num);
+            }
+        }
+    } else {
+        const vector<int>& numbers = get<vector<int>>(number);
+        for (int num : numbers) {
+            for (auto& entry : sprites) {
+                addTagToSprite(entry, num);
+            }
+        }
+    }
 }
 
+vector<pair<string, int>> Silver::seekTag(const string& tag) {
+    vector<pair<string, int>> result;
 
+    auto hasTag = [&](const mesh& obj) {
+        return find(obj.object.tags.begin(), obj.object.tags.end(), tag) != obj.object.tags.end();
+    };
+
+    for (const auto& entry : sprites) {
+        if (hasTag(entry.second)) {
+            result.emplace_back(entry.second.object.name, entry.second.object.number);
+        }
+    }
+
+    return result;
+}
+
+vector<string> Silver::getTag(const string& name, int number) {
+    if(number==origin) {
+	    for (const auto& entry : globalObjects) {
+		return entry.second.tags; 
+	    }
+    }
+
+    for (const auto& entry : sprites) {
+        if (entry.second.object.name == name && entry.second.object.number == number) {
+            return entry.second.object.tags; 
+        }
+    }
+
+    return {}; 
+}
+
+zone Silver::buildZone(variant<tuple<int,int,int,int>, vector<tuple<int,int,int,int>>> shape) {
+    return zone(shape);
+}
+
+bool Silver::isInZone(const zone& z, Vec3 pos) {
+    int pointX=pos.x, pointY=pos.y;
+    if (holds_alternative<tuple<int, int, int, int>>(z.shape)) {
+        const auto& rect = get<tuple<int, int, int, int>>(z.shape);
+        int x = get<0>(rect);
+        int y = get<1>(rect);
+        int width = get<2>(rect);
+        int height = get<3>(rect);
+
+        return (pointX >= x && pointX <= x + width) &&
+               (pointY >= y && pointY <= y + height);
+    } else {
+        const auto& rects = get<vector<tuple<int, int, int, int>>>(z.shape);
+        for (const auto& rect : rects) {
+            int x = get<0>(rect);
+            int y = get<1>(rect);
+            int width = get<2>(rect);
+            int height = get<3>(rect);
+
+            if ((pointX >= x && pointX <= x + width) &&
+                (pointY >= y && pointY <= y + height)) {
+                return true; 
+            }
+        }
+    }
+    return false; 
+}
+
+void Silver::Timer::resetTimer(string name) {
+    running[name] = false;
+    duration[name] = 0;
+}
+
+long long Silver::Timer::getDuration(string name) const {
+
+    if (running.find(name) != running.end() && running.at(name) == true) {
+        auto currentTime = chrono::high_resolution_clock::now();
+        return duration.at(name) + chrono::duration_cast<chrono::milliseconds>(currentTime - startTime.at(name)).count();
+    }
+
+    if (duration.find(name) != duration.end()) {
+        return duration.at(name);
+    }
+
+    return 0; 
+}
+
+void Silver::Timer::startTimer(string name) {
+
+    if (running.find(name) == running.end() || running.at(name) == false) {
+        startTime[name] = chrono::high_resolution_clock::now();
+        running[name] = true;
+    }
+}
+
+void Silver::Timer::stopTimer(string name) {
+    if (running[name]) {
+        auto endTime = chrono::high_resolution_clock::now();
+        duration[name] += chrono::duration_cast<chrono::milliseconds>(endTime - startTime.at(name)).count();
+        running[name] = false;
+    }
+}
+
+float Silver::Timer::getDeltaTime(string name) const {
+    return deltaTime.at(name); 
+}
+
+void Silver::Timer::update(string name) {
+    auto currentTime = chrono::high_resolution_clock::now();
+
+    deltaTime[name] = chrono::duration<float>(currentTime - lastTime.at(name)).count(); 
+
+    lastTime[name] = currentTime;
+}
+
+void Silver::walk(string name, variant<vector<int>,int> number, int steps, int direction) {
+
+    const double PI = 3.14159265358979323846;
+    double rad = direction * (PI / 180.0);
+
+    int deltaX = steps * sin(rad);
+    int deltaY = steps * cos(rad);
+
+    if(holds_alternative<int>(number)) {
+        int singleNumber = get<int>(number);
+        silver.moveObjectXY(name, singleNumber, Vec2(deltaX, deltaY));
+    } else {
+        vector<int> numbers = get<vector<int>>(number);
+        silver.moveObjectXY(name, numbers, Vec2(deltaX, deltaY));
+    }
+}
