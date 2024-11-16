@@ -23,7 +23,7 @@
 
 #define MAX_TOKEN_SIZE 1000
 
-#define all - 1
+#define all_numbers - 1
 #define origin - 2
 #define immediate - 1
 #define upKey 65
@@ -31,10 +31,13 @@
 #define leftKey 68
 #define rightKey 67
 #define escapeKey 27
-#define drawing - 214743648
+
 #define pointer "OBJECT_POINTER"
 #define World map < int, mesh >
-  using namespace std;
+  #define infinity - 1
+#define ui_c 1048576
+
+using namespace std;
 
 class Vec3 {
   public: int x,
@@ -120,6 +123,8 @@ class Vec3 {
   }
 };
 
+#define markAsUI Vec3(1048576, 1048576, 0)
+
 class Vec2 {
   public: int x,
   y;
@@ -160,96 +165,123 @@ class Vec2 {
   }
 };
 
+struct components {
+
+  std::string signMessage;
+  std::string readerKey;
+
+  bool isFluid = false;
+  double diffusionSpeed = 1.0;
+  int maximumDistance = 5;
+  bool preventFlowing = false;
+  int fluidDepth = 0;
+  int fluidRoot = -1;
+  int fluidParent = -1;
+  double drySpeed = 100.0;
+  double pressure = 1.0;
+  bool isDead = false;
+
+  bool followPhysics = false;
+  double mass = 1.0;
+  double dragCoefficient = 1.225;
+  double angularDrag = 0.01;
+  Vec3 Velocity = {
+    0,
+    0,
+    0
+  };
+  double angularVelocity = 0.0;
+  double position = 0.0;
+  double angularPosition = 0.0;
+  double drag = 0.0;
+  bool gravity = false;
+  bool isKinematic = false;
+  double destroyForce = -1.0;
+
+  bool canCollide = false;
+
+  bool isUI = false;
+
+  string animationBuffer;
+  int playingID = -1;
+
+};
+
 struct sprite {
   Vec3 position;
-  string name;
+  std::string name;
   int number;
 
-  map < string, int > intValues;
-  map < string, string > stringValues;
+  std::map < std::string, int > intValues;
+  std::map < std::string, std::string > stringValues;
 
-  vector < string > tags;
+  std::vector < std::string > tags;
 
   sprite(const Vec3 & pos = Vec3(0, 0, 0),
-    const string & n = "",
+    const std::string & n = "",
       int num = 0): position(pos), name(n), number(num) {}
 };
 
-struct components {
-  public: string signMessage = "";
-  string readerKey = "";
+class prefab {
+  public: std::string name;
+  std::string shape;
+  std::vector < std::string > tags;
+  int transparency;
+  components Components;
 
-  bool isFluid = false;
-  double diffusionSpeed = 1.f;
-  int maximumDistance = 5;
-  double pressure = 1;
-
-  bool preventFlowing = false;
+  prefab(const std::string & n = "",
+    const std::string & shp = "",
+      int transp = 0): name(n),
+  shape(shp),
+  transparency(transp) {}
 };
 
 class mesh {
   public: sprite object;
   std::string scripts;
   std::string shape;
-
-  string animationBuffer;
-  int playingID = -1;
-  int transparency = 0;
+  int transparency;
   components Components;
 
   mesh(): object(),
-  scripts(""),
-  shape(""),
-  animationBuffer(""),
   transparency(0) {}
-  mesh(sprite obj,
+
+  mesh(const sprite & obj,
     const std::string & scr,
       const std::string & shp): object(obj),
   scripts(scr),
   shape(shp),
   transparency(0) {}
 
-  // Parameterized constructor
+  mesh(const prefab & pfb): object(sprite(Vec3(0, 0, 0), pfb.name)),
+  shape(pfb.shape),
+  transparency(pfb.transparency),
+  Components(pfb.Components) {}
 
-  // Other member functions
   void setTransparency(int value) {
     transparency = (value == 0 || value == 1) ? value : transparency;
   }
+
   void translate2(Vec3 offset) {
     object.position.x += offset.x;
     object.position.y += offset.y;
   }
+
   void translate3(Vec3 offset) {
     object.position += offset;
   }
 
-  Vec3 getPos2() {
+  Vec3 getPos2() const {
     return {
       object.position.x,
       object.position.y,
       0
     };
   }
-  Vec3 getPos3() {
+
+  Vec3 getPos3() const {
     return object.position;
   }
-};
-
-struct objects {
-  string name;
-
-  string shape;
-  vector < string > tags;
-
-  int transparency;
-  components Components;
-
-};
-
-struct scene {
-  string name;
-  vector < sprite > objects;
-  vector < mesh > objectProps;
 };
 
 struct zone {
@@ -268,6 +300,11 @@ struct zone {
 class Silver {
 
   public: bool isInZone(const zone & z, Vec3 pos);
+  class UI {
+
+    void changeToUI(variant < vector < int > , int > workspaceIDs);
+    int place(string objectName, int number, Vec3 pos);
+  };
 
   class Fluid {
     public: void Liquify(const variant < int, vector < int >> & IDs, double diffusionSpeed, int maximumDistance);
@@ -283,6 +320,16 @@ class Silver {
       const std::string & filename);
     void stopAnimation(variant < int, vector < int >> objID, bool reset);
   };
+
+  class Particle {
+    public: void applyParticleComponent(int objID,
+      const std::string & objectName, Vec3 pos, int radius,
+        int lifeTime, double speed, int quantity, int particleLifetime);
+
+  };
+  class Physics {
+
+  };
   class Drawing {
     public: void draw(Vec3 pos, string c);
     void Line(Vec3 start, Vec3 end, string c);
@@ -290,8 +337,8 @@ class Silver {
     void Circle(Vec3 center, int radius, string c);
     void CircleHollow(Vec3 center, int radius, string c);
     void RectangleHollow(Vec3 topLeft, int width, int height, string c);
-    void Oval(Vec3 center, Vec3 scale, string c);
-    void OvalHollow(Vec3 center, Vec3 scale, string c);
+    void Oval(Vec3 center, int radiusX, int radiusY, string c);
+    void OvalHollow(Vec3 center, int radiusX, int radiusY, string c);
 
     void sprayRectangle(int spawns, Vec3 center, Vec3 scale, string c);
     void sprayOval(int spawns, Vec3 center, Vec3 scale, string c);
@@ -303,15 +350,17 @@ class Silver {
   void setObjectPosition(const variant < int, vector < int >> objectID, Vec3 pos);
   void glideObjectPositionToSprite(const variant < int, vector < int >> objectIDs, int spriteID, float speed);
   void setObjectPositionToSprite(const variant < int, vector < int >> objectIDs, int spriteID);
-  void sprayRectangle(string name, int number, int spawns, Vec3 center, Vec3 scale);
-  void sprayOval(string name, int number, int spawns, Vec3 center, Vec3 scale);
-  void spray(string name, int number, int spawns, Vec3 center, int range);
+  void sprayRectangle(int spawns, Vec3 center, Vec3 scale, string name, int number);
+  void sprayOval(int spawns, Vec3 center, Vec3 scale, string name, int number);
+  void spray(int spawns, Vec3 center, int range, string name, int number);
+  bool isAlive(int obj);
+  void sprayLine(int spawns, Vec3 start, Vec3 end, string name, int number);
+  int place(string objectName, int number, Vec3 pos);
+  void sprayLine(string name, int number, int spawns, Vec3 start, Vec3 end);
 
   void createObject(const string name,
     const string shape);
-  void sprayLine(int spawns, Vec3 start, Vec3 end, string c);
-  int place(string objectName, int number, Vec3 pos);
-  void sprayLine(string name, int number, int spawns, Vec3 start, Vec3 end);
+
   void moveObjectXY(const variant < int, vector < int >> objectID, Vec3 pos);
   void moveObjectX(const variant < int, vector < int >> objectID, int x_offset);
   void moveObjectY(const variant < int, vector < int >> objectID, int y_offset);
@@ -325,7 +374,8 @@ class Silver {
 
   void CircleHollow(string name, int number, Vec3 center, int radius);
   void Circle(string name, int number, Vec3 center, int radius);
-
+  void debug(const std::string & message,
+    const std::string & mode);
   void Line(string name, int number, Vec3 start, Vec3 end);
 
   void Oval(string name, int number, Vec3 center, Vec3 scale);
@@ -341,7 +391,8 @@ class Silver {
     const pair < int, int > & xRange,
       const pair < int, int > & yRange, float speed);
   void moveObjectPosition(const variant < int, vector < int >> objectID, Vec3 pos);
-  void glideObjectXY(const variant < int, vector < int >> & ids, Vec3 target_pos, float speed, ...);
+  void glideObjectXY(const variant < int, vector < int >> & ids,
+    const Vec3 & offset, float speed, ...);
 
   vector < Vec3 > getRectanglePoints(Vec3 topLeft, int width, int height);
   vector < Vec3 > getRectangleHollowPoints(Vec3 topLeft, int width, int height);
@@ -371,34 +422,29 @@ class Silver {
     int mouseKey;
     int cursorPositionX = 0;
     int cursorPositionY = 0;
+    string mouseIcon = "🖱️";
     bool isMouse();
   };
 
   vector < string > getTag(int id);
   void setConsoleTitle(const std::string & title);
   class Camera {
-    public: string topText,
-    bottomText;
-    string leftText;
-    string rightText;
-    void displayText(const string & text, int scaleX, int maxLeftWidth, bool isTop, int offsetX);
-    int topAlign = 0,
+    public: string topText = "Up Text\nAbove the camera";
+    string rightText = "Side Text\nIn the right side of the camera";
+    string leftText = "Side Text\nIn the left side of the camera";
+    string bottomText = "These are the texts in the four directions";
+
+    int topAlign = 1,
     bottomAlign = 0,
     leftAlign = 0,
     rightAlign = 0;
 
     string mouseIcon;
-    Vec3 CameraConsolePos = {
-      0,
-      0,
-      0
+    Vec2 CameraConsolePos = {
+      1,
+      20
     };
-    int anchor = 0;
-    /*
-    0 1 2
-    3 4 5
-    6 7 8
-    */
+    int anchor = 4;
 
     Vec3 CameraPos = {
       0,
@@ -424,6 +470,8 @@ class Silver {
     string > lastFrame;
     void setCam3(Vec3 pos, Vec3 scale);
     void setCam2(Vec3 pos, Vec3 scale);
+    void setCam3(int objId, Vec3 pos, Vec3 scale);
+    void setCam2(int objId, Vec3 pos, Vec3 scale);
     void printCam();
     void flipCamera(int X, int Y);
     Vec2 getScreenPosition(Vec3 pos);
@@ -436,27 +484,26 @@ class Silver {
     void zoomCamera(Vec3 V);
     void addCameraDepth(int X);
     void cell(int c);
-    void configCameraException(string o, string n);
+    void configCameraException(string n);
     void setCameraDepth(int X);
     void moveCamera(Vec3 V);
     void startVideo(int FPS);
     void endVideo();
     void restartVideo(int FPS);
     void photo();
+
     vector < vector < string >> gPhoto();
   };
 
-  void kill(const string & objectName,
-    const variant < int, vector < int >> & number);
-  void revive(const string & objectName,
-    const variant < int, vector < int >> & number);
+  void kill(int objID);
+  void revive(int objID);
 
-  void destroy(const string & objectName,
-    const variant < int, vector < int >> & number);
+  void destroy(int objID);
 
   void gotoxy(int x, int y);
   int put(string objectName, Vec3 pos);
-
+  int unoccupied(string objectName);
+  void createEmptyObject(const string name);
   vector < int > seek(string objectName);
 
   vector < int > spriteAt3(Vec3 pos);
@@ -557,17 +604,22 @@ class Silver {
   vector < int > getLocationX(const variant < int, vector < int >> objectID);
   vector < int > getLocationY(const variant < int, vector < int >> objectID);
   vector < int > getLocationZ(const variant < int, vector < int >> objectID);
+
   int PlaceMesh(mesh m, Vec3 pos);
   void hold();
+  vector < int > all();
   vector < int > findObjects(string name, variant < vector < int > , int > number);
   Camera camera;
   Keyboard keyboard;
   Timer timer;
   Threading threading;
   Mouse mouse;
-  Drawing draw;
+  Drawing drawing;
   Animation animation;
   Fluid fluid;
+  Particle particle;
+  Physics physics;
+  UI ui;
   int sprites_count = 0;
 };
 
@@ -576,8 +628,10 @@ void startLoading();
 extern Silver silver;
 extern Vec3 Vector3;
 extern World workspace;
+
 extern World killedSprites;
 extern World empty;
 extern map <
-  const string, objects > prefabs;
+  const string, prefab > prefabrications;
+
 #endif
