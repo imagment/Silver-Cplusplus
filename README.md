@@ -1,3 +1,8 @@
+> Warning:
+> This documentation is outdated.
+> The documentation would be modified shortly.
+> Thanks for your patience.
+
 # game.hpp Documentation
 
 ## Index
@@ -7,8 +12,6 @@
   - [Camera](#camera)
   - [Object Declaration](#object-declaration)
   - [Object Movement](#object-movement)
-- [Source Code & Modding Guidelines](#source-code--modding-guidelines)
-- [List of functions](#list-of-functions)
 
 ## Functions
 
