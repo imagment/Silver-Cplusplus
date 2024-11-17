@@ -330,6 +330,7 @@ class Silver {
   class Physics {
 
   };
+  void saveChunk(Vec3 range1, Vec3 range2, const string& fileName, const string& mode) ;
   class Drawing {
     public: void draw(Vec3 pos, string c);
     void Line(Vec3 start, Vec3 end, string c);
@@ -358,8 +359,7 @@ class Silver {
   int place(string objectName, int number, Vec3 pos);
   void sprayLine(string name, int number, int spawns, Vec3 start, Vec3 end);
 
-  void createObject(const string name,
-    const string shape);
+  void createObject(const string name, const string shape);
 
   void moveObjectXY(const variant < int, vector < int >> objectID, Vec3 pos);
   void moveObjectX(const variant < int, vector < int >> objectID, int x_offset);
@@ -429,11 +429,12 @@ class Silver {
   vector < string > getTag(int id);
   void setConsoleTitle(const std::string & title);
   class Camera {
-    public: string topText = "Up Text\nAbove the camera";
-    string rightText = "Side Text\nIn the right side of the camera";
-    string leftText = "Side Text\nIn the left side of the camera";
-    string bottomText = "These are the texts in the four directions";
-
+    public:
+    vector<string> topText = {"Hi there, you're new to here"};
+    vector<string> rightText = {};
+    vector<string> leftText = {};
+    vector<string> bottomText = {"Welcome to Silver C++! This is a template for Silver C++ Version -16. (A.K.A. Version Torch)"};
+    bool sideLimit=false;
     int topAlign = 1,
     bottomAlign = 0,
     leftAlign = 0,
@@ -441,10 +442,10 @@ class Silver {
 
     string mouseIcon;
     Vec2 CameraConsolePos = {
-      1,
-      20
+      0,
+      0
     };
-    int anchor = 4;
+    int anchor = 0;
 
     Vec3 CameraPos = {
       0,

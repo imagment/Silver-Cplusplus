@@ -77,31 +77,6 @@ string null_rep = "🟫";
 int WorldX = 20, WorldY = 20;
 
 Silver silver;
-void Silver::Scene::saveWorldAs(std::string name) {
-
-  scenes[name] = workspace;
-
-}
-
-void Silver::Scene::changeSceneTo(std::string name) {
-  auto it = scenes.find(name);
-  if (it != scenes.end()) {
-    workspace = it -> second;
-  }
-}
-
-void Silver::Scene::resetScene() {
-  World empty;
-  workspace = empty;
-}
-
-void Silver::Camera::cell(int c) {
-  silver.camera.cellSize = c;
-}
-
-void Silver::Camera::configCameraException(string n) {
-  null_rep = n;
-}
 
 vector < mesh > Silver::MeshAt3(Vec3 pos) {
   vector < mesh > result;
@@ -151,6 +126,581 @@ vector < int > Silver::all() {
 
   return keys;
 }
+
+void Silver::setWorldBounds(Vec3 world) {
+  WorldX = world.x;
+  WorldY = world.y;
+}
+
+vector < int > Silver::seek(string objectName) {
+  vector < int > numbers;
+  for (auto entry: workspace) {
+    if (entry.second.object.name == objectName) {
+      numbers.push_back(entry.second.object.number);
+    }
+  }
+  return numbers;
+}
+vector < int > Silver::findObjects(string name, variant < vector < int > , int > number) {
+  vector < int > numbers;
+
+  for (auto & entry: workspace) {
+
+    if (entry.second.object.name == name) {
+
+      if (holds_alternative < vector < int >> (number)) {
+        vector < int > numList = get < vector < int >> (number);
+
+        if (find(numList.begin(), numList.end(), entry.second.object.number) != numList.end()) {
+          numbers.push_back(entry.first);
+        }
+      } else if (holds_alternative < int > (number)) {
+        int num = get < int > (number);
+
+        if (entry.second.object.number == num || num == all_numbers) {
+          numbers.push_back(entry.first);
+        }
+      }
+    }
+  }
+
+  return numbers;
+}
+
+void Silver::destroy(int objID) {
+
+  vector < int > keysToRemove;
+  vector < string > globalKeysToRemove;
+
+  for (const auto & entry: workspace) {
+    if (entry.first == objID) {
+      keysToRemove.push_back(entry.first);
+    }
+  }
+
+  for (const auto & key: keysToRemove) {
+    workspace.erase(key);
+  }
+
+  for (const auto & key: globalKeysToRemove) {
+    prefabrications.erase(key);
+  }
+}
+
+void Silver::kill(int objID) {
+
+  vector < int > keysToKill;
+
+  for (const auto & entry: workspace) {
+    if (entry.first == objID) {
+      keysToKill.push_back(entry.first);
+    }
+  }
+
+  for (const auto & key: keysToKill) {
+    killedSprites.insert({
+      key,
+      workspace.find(key) -> second
+    });
+    workspace.erase(key);
+  }
+}
+
+void Silver::revive(int objID) {
+
+  vector < int > keysToRevive;
+
+  for (const auto & entry: killedSprites) {
+    if (entry.first == objID) {
+      keysToRevive.push_back(entry.first);
+    }
+  }
+
+  for (const auto & key: keysToRevive) {
+    workspace.insert({
+      key,
+      killedSprites.find(key) -> second
+    });
+    killedSprites.erase(key);
+  }
+}
+
+void Silver::Scene::saveWorldAs(std::string name) {
+  scenes[name] = workspace;
+
+}
+
+void Silver::Scene::changeSceneTo(std::string name) {
+  auto it = scenes.find(name);
+  if (it != scenes.end()) {
+    workspace = it -> second;
+  }
+}
+
+void Silver::Scene::resetScene() {
+  World empty;
+  workspace = empty;
+}
+
+Vec2 Silver::Camera::getScreenPosition(Vec3 pos) {
+  int worldX = pos.x;
+  int worldY = pos.y;
+  float radians = silver.camera.cameraRotation * (M_PI / 180.0);
+  float cosTheta = cos(radians);
+  float sinTheta = sin(radians);
+
+  int centerX = silver.camera.CameraScale.x / 2;
+  int centerY = silver.camera.CameraScale.y / 2;
+
+  float dx = worldX - silver.camera.CameraPos.x;
+  float dy = worldY - silver.camera.CameraPos.y;
+
+  int rotatedX = round(cosTheta * dx + sinTheta * dy);
+  int rotatedY = round(-sinTheta * dx + cosTheta * dy);
+
+  if (silver.camera.isFlippedHorizonal == -1) {
+    rotatedX = WorldX - rotatedX - 1;
+  }
+  if (silver.camera.isFlippedVertical == -1) {
+    rotatedY = WorldY - rotatedY - 1;
+  }
+
+  int screenX = rotatedX + centerX;
+  int screenY = rotatedY + centerY;
+
+  return {
+    screenX,
+    screenY
+  };
+}
+
+void Silver::Camera::flipCamera(int X, int Y) {
+  if (X == 1 || X == -1) {
+    silver.camera.isFlippedHorizonal *= X;
+  }
+  if (Y == 1 || Y == -1) {
+    silver.camera.isFlippedVertical *= Y;
+  }
+}
+
+void Silver::Camera::SetCameraFlip(int X, int Y) {
+  if (X == 1 || X == -1) {
+    silver.camera.isFlippedHorizonal = X;
+  }
+  if (Y == 1 || Y == -1) {
+    silver.camera.isFlippedVertical = Y;
+  }
+}
+
+void Silver::Camera::pivotCamera(int angle) {
+  silver.camera.cameraRotation = angle;
+}
+
+void Silver::Camera::addPivotCamera(int angle) {
+  silver.camera.cameraRotation += angle;
+}
+
+void Silver::Camera::cell(int c) {
+  silver.camera.cellSize = c;
+}
+
+void Silver::Camera::configCameraException(string n) {
+  null_rep = n;
+}
+
+void Silver::Camera::setCam3(Vec3 pos, Vec3 scale) {
+  silver.camera.CameraPos = pos;
+  silver.camera.CameraScale = scale;
+}
+
+void Silver::Camera::setCam2(Vec3 pos, Vec3 scale) {
+  silver.camera.CameraPos = {
+    pos.x,
+    pos.y,
+    silver.camera.CameraPos.z
+  };
+  silver.camera.CameraScale = {
+    pos.x,
+    pos.y,
+    silver.camera.CameraScale.z
+  };
+}
+
+int getObjectIdAtCoordinates(Vec3 pos) {
+
+  for (const auto & entry: workspace) {
+    const auto & object = entry.second;
+
+    if (pos == entry.second.object.position) {
+      return entry.first;
+    }
+  }
+
+  return -1;
+}
+
+std::string truncateToCellSize(const std::string & cellContent, int cellSize) {
+  std::string result;
+  int currentWidth = 0;
+  size_t i = 0;
+
+  while (i < cellContent.size()) {
+
+    unsigned char ch = cellContent[i];
+    int charBytes = 1;
+
+    if ((ch & 0x80) != 0) {
+      if ((ch & 0xE0) == 0xC0) {
+        charBytes = 2;
+      } else if ((ch & 0xF0) == 0xE0) {
+        charBytes = 3;
+      } else if ((ch & 0xF8) == 0xF0) {
+        charBytes = 4;
+      }
+    }
+
+    if (currentWidth + 1 > cellSize) {
+      break;
+    }
+
+    result += cellContent.substr(i, charBytes);
+    currentWidth += 1;
+
+    i += charBytes;
+  }
+
+  return result;
+}
+
+void displayText(const string & text, int scaleX, int maxLeftWidth, bool isTop, int offsetX) {
+  if (!text.empty()) {
+    stringstream ss(text);
+    string line;
+    cout << "\n";
+    while (getline(ss, line)) {
+      int padding = (scaleX * silver.camera.cellSize - line.size()) / 2 + offsetX;
+      padding = std::max(0, padding + maxLeftWidth);
+      cout << string(padding, ' ') << line << endl;
+    }
+  }
+}
+
+string join(const vector < string > & lines) {
+  string result;
+  for (const auto & line: lines) {
+    result += line + "\n";
+  }
+  if (!result.empty()) {
+    result.pop_back();
+  }
+  return result;
+}
+
+void Silver::Camera::printCam() {
+  if (isFirst) {
+    silver.setRawMode();
+    silver.clear();
+  }
+
+  vector < vector < string >> buffer(
+    silver.camera.CameraScale.y, vector < string > (silver.camera.CameraScale.x, null_rep)
+  );
+
+  float radians = silver.camera.cameraRotation * (M_PI / 180.0);
+  float cosTheta = cos(radians);
+  float sinTheta = sin(radians);
+
+  int centerX = silver.camera.CameraScale.x / 2;
+  int centerY = silver.camera.CameraScale.y / 2;
+
+  bool sign = false;
+  string signMessage, signIcon, objectName;
+
+  string rightText, leftText, topText, bottomText;
+  if (!silver.camera.rightText.empty()) {
+    rightText = join(silver.camera.rightText);
+  }
+
+  if (!silver.camera.leftText.empty()) {
+    leftText = join(silver.camera.leftText);
+  }
+
+  if (!silver.camera.bottomText.empty()) {
+    bottomText = join(silver.camera.bottomText);
+  }
+
+  if (!silver.camera.topText.empty()) {
+    topText = join(silver.camera.topText);
+  }
+
+  for (const auto & entry: workspace) {
+    const auto & obj = entry.second;
+
+    int dx, dy, dz;
+
+    if (obj.Components.isUI) {
+      dx = (obj.object.position.x - 1048576) - silver.camera.CameraScale.x / 2;
+      dy = (obj.object.position.y - 1048576) - silver.camera.CameraScale.y / 2;
+    } else {
+      dx = obj.object.position.x - silver.camera.CameraPos.x;
+      dy = obj.object.position.y - silver.camera.CameraPos.y;
+    }
+
+    dz = obj.object.position.z - silver.camera.CameraPos.z;
+
+    int rotatedX = round(cosTheta * dx + sinTheta * dy) + centerX;
+    int rotatedY = round(-sinTheta * dx + cosTheta * dy) + centerY;
+
+    if (silver.camera.isFlippedHorizonal == -1) {
+      rotatedX = silver.camera.CameraScale.x - rotatedX - 1;
+    }
+    if (silver.camera.isFlippedVertical == -1) {
+      rotatedY = silver.camera.CameraScale.y - rotatedY - 1;
+    }
+
+    if (rotatedX >= 0 && rotatedX < silver.camera.CameraScale.x &&
+      rotatedY >= 0 && rotatedY < silver.camera.CameraScale.y &&
+      dz >= -silver.camera.CameraScale.z / 2 && dz <= silver.camera.CameraScale.z / 2) {
+
+      if (obj.transparency == 0) {
+        buffer[rotatedY][rotatedX] = obj.shape;
+
+        if (!obj.Components.signMessage.empty()) {
+          signMessage = obj.Components.signMessage;
+          sign = true;
+          signIcon = obj.shape;
+          objectName = obj.object.name;
+        }
+      }
+    }
+  }
+
+  int mouseX = silver.mouse.cursorPositionX;
+  int mouseY = silver.mouse.cursorPositionY;
+
+  vector < string > leftTextLines, rightTextLines;
+  int leftTextLinesCount = 0, rightTextLinesCount = 0;
+
+  if (!silver.camera.rightText.empty()) {
+    std::string rightTextConcat = "";
+    for (size_t i = 0; i < silver.camera.rightText.size(); ++i) {
+      rightTextConcat += silver.camera.rightText[i];
+      if (i != silver.camera.rightText.size() - 1) {
+        rightTextConcat += '\n';
+      }
+    }
+
+    stringstream ss(rightTextConcat);
+    string line;
+    while (getline(ss, line)) {
+      rightTextLines.push_back(line);
+      rightTextLinesCount++;
+    }
+  }
+
+  int maxLeftWidth = 0, maxRightWidth = 0;
+  for (const auto & line: leftTextLines) {
+    maxLeftWidth = std::max(maxLeftWidth, static_cast < int > (line.size()));
+  }
+  for (const auto & line: rightTextLines) {
+    maxRightWidth = std::max(maxRightWidth, static_cast < int > (line.size()));
+  }
+
+  int tl = silver.camera.leftAlign == 0 ? silver.camera.CameraScale.y / 2 - leftTextLinesCount / 2 :
+    (silver.camera.leftAlign == 1 ? 0 : silver.camera.CameraScale.y - leftTextLinesCount);
+  int tr = silver.camera.rightAlign == 0 ? silver.camera.CameraScale.y / 2 - rightTextLinesCount / 2 :
+    (silver.camera.rightAlign == 1 ? 0 : silver.camera.CameraScale.y - rightTextLinesCount);
+
+  int offsetX = silver.camera.CameraConsolePos.x;
+  int offsetY = silver.camera.CameraConsolePos.y;
+
+  switch (anchor) {
+  case 0:
+    break;
+  case 1:
+    offsetX -= silver.camera.CameraScale.x / 2;
+    break;
+  case 2:
+    offsetX -= silver.camera.CameraScale.x;
+    break;
+  case 3:
+    offsetY -= silver.camera.CameraScale.y / 2;
+    break;
+  case 4:
+    offsetX -= silver.camera.CameraScale.x / 2;
+    offsetY -= silver.camera.CameraScale.y / 2;
+    break;
+  case 5:
+    offsetX -= silver.camera.CameraScale.x;
+    offsetY -= silver.camera.CameraScale.y / 2;
+    break;
+  case 6:
+    offsetY -= silver.camera.CameraScale.y;
+    break;
+  case 7:
+    offsetX -= silver.camera.CameraScale.x / 2;
+    offsetY -= silver.camera.CameraScale.y;
+    break;
+  case 8:
+    offsetX -= silver.camera.CameraScale.x;
+    offsetY -= silver.camera.CameraScale.y;
+    break;
+  }
+
+  offsetX = std::max(0, offsetX);
+  offsetY = std::max(0, offsetY);
+
+  for (const auto & line: leftTextLines) {
+    maxLeftWidth = std::max(maxLeftWidth, static_cast < int > (line.size()));
+  }
+
+  if (!silver.camera.leftText.empty()) {
+    std::string leftTextConcat = "";
+    for (size_t i = 0; i < silver.camera.leftText.size(); ++i) {
+      leftTextConcat += silver.camera.leftText[i];
+      if (i != silver.camera.leftText.size() - 1) {
+        leftTextConcat += '\n';
+      }
+    }
+
+    stringstream ss(leftTextConcat);
+    string line;
+    while (getline(ss, line)) {
+      leftTextLines.push_back(line);
+      leftTextLinesCount++;
+    }
+  }
+
+  for (const auto & line: leftTextLines) {
+    maxLeftWidth = std::max(maxLeftWidth, static_cast < int > (line.size()));
+  }
+
+  int topTextOffsetX = offsetX + 1;
+
+  topTextOffsetX += maxLeftWidth;
+
+  int topTextLinesCount = 0;
+  int bottomTextLinesCount = 0;
+  string topTextConcat = "";
+  string bottomTextConcat = "";
+  vector < string > topTextLines;
+  vector < string > bottomTextLines;
+
+  if (!silver.camera.topText.empty()) {
+    std::string topTextConcat = "";
+    for (size_t i = 0; i < silver.camera.topText.size(); ++i) {
+      topTextConcat += silver.camera.topText[i];
+      if (i != silver.camera.topText.size() - 1) {
+        topTextConcat += '\n';
+      }
+    }
+
+    std::stringstream ssTop(topTextConcat);
+    std::string line;
+    while (std::getline(ssTop, line)) {
+      topTextLines.push_back(line);
+      ++topTextLinesCount;
+    }
+  }
+
+  if (!silver.camera.bottomText.empty()) {
+    std::string bottomTextConcat = "";
+    for (size_t i = 0; i < silver.camera.bottomText.size(); ++i) {
+      bottomTextConcat += silver.camera.bottomText[i];
+      if (i != silver.camera.bottomText.size() - 1) {
+        bottomTextConcat += '\n';
+      }
+    }
+
+    std::stringstream ssBottom(bottomTextConcat);
+    std::string line;
+    while (std::getline(ssBottom, line)) {
+      bottomTextLines.push_back(line);
+      ++bottomTextLinesCount;
+    }
+  }
+
+  for (int i = 0; i < topTextLines.size(); ++i) {
+    int lineOffsetX = offsetX + maxLeftWidth + 1;
+    if (silver.camera.topAlign == 1) {
+      lineOffsetX += 0;
+    } else if (silver.camera.topAlign == 2) {
+      lineOffsetX += silver.camera.CameraScale.x * cellSize - topTextLines[i].size();
+    } else if (silver.camera.topAlign == 0) {
+      lineOffsetX += (silver.camera.CameraScale.x * cellSize - topTextLines[i].size()) / 2;
+    }
+    int currentY = offsetY + i;
+    if (currentY >= 0) {
+      silver.gotoxy(lineOffsetX, currentY);
+      cout << topTextLines[i] << flush;
+    }
+  }
+
+  int renderedHeight = silver.camera.CameraScale.y;
+  if (!sideLimit) {
+
+    renderedHeight = std::max(renderedHeight, std::max(leftTextLinesCount, rightTextLinesCount));
+  }
+
+  for (int j = 0; j < renderedHeight; ++j) {
+    string leftLine = (j - tl < leftTextLines.size() && j - tl >= 0) ? leftTextLines[j - tl] : "";
+    leftLine = string(maxLeftWidth - leftLine.size(), ' ') + leftLine;
+
+    string rightLine = (j - tr < rightTextLines.size() && j - tr >= 0) ? rightTextLines[j - tr] : "";
+    rightLine += string(maxRightWidth - rightLine.size(), ' ');
+
+    string line = leftLine + " ";
+
+    if (j < silver.camera.CameraScale.y) {
+
+      for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
+        string cellContent = (!hideMouse && i == mouseX && j == mouseY) ? mouseIcon : buffer[j][i];
+
+        if (gridMode && cellContent.size() > silver.camera.cellSize) {
+          cellContent = truncateToCellSize(cellContent, silver.camera.cellSize);
+        }
+        if (fillMode && cellContent.size() < silver.camera.cellSize) {
+          cellContent.append(silver.camera.cellSize - cellContent.size(), ' ');
+        }
+
+        line += cellContent;
+      }
+    } else {
+
+      line += string(silver.camera.cellSize * silver.camera.CameraScale.x, ' ');
+    }
+
+    line += " " + rightLine;
+
+    int currentY = offsetY + j + topTextLinesCount;
+    if (currentY >= 0) {
+      silver.gotoxy(offsetX, currentY);
+      cout << line << flush;
+    }
+  }
+
+  for (int i = 0; i < bottomTextLines.size(); ++i) {
+    int lineOffsetX = offsetX + maxLeftWidth + 1;
+    if (silver.camera.bottomAlign == 1) {
+      lineOffsetX += 0;
+    } else if (silver.camera.bottomAlign == 2) {
+      lineOffsetX += silver.camera.CameraScale.x * cellSize - bottomTextLines[i].size();
+    } else if (silver.camera.bottomAlign == 0) {
+      lineOffsetX += (silver.camera.CameraScale.x * cellSize - bottomTextLines[i].size()) / 2;
+    }
+    int currentY = offsetY + silver.camera.CameraScale.y + topTextLinesCount + i;
+    if (currentY >= 0) {
+      silver.gotoxy(lineOffsetX, currentY);
+      cout << bottomTextLines[i] << flush;
+    }
+  }
+
+}
+
+void Silver::setConsoleTitle(const std::string & title) {
+  std::cout << "\033]0;" << title << "\007";
+}
+
 char Silver::Keyboard::getKey() {
   struct termios oldt, newt;
   int ch;
@@ -191,16 +741,14 @@ bool Silver::Mouse::isMouse() {
   return false;
 }
 
-void Silver::gotoxy(int x, int y) {
-  cout << "\033[" << y + 1 << ";" << x + 1 << "H" << flush;
+void Silver::clear() {
+  system("clear");
 }
 
-Vec3 rotatePoint(Vec3 point, float angle) {
-  float radians = angle * (M_PI / 180. f);
-  float cosA = cos(radians);
-  float sinA = sin(radians);
-  return Vec3(static_cast < int > (round(point.x * cosA - point.y * sinA)),
-    static_cast < int > (round(point.x * sinA + point.y * cosA)), 0);
+void Silver::gotoxy(int x, int y) {
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
+  cout << "\033[" << y + 1 << ";" << x + 1 << "H" << flush;
 }
 
 void Silver::Drawing::spray(int spawns, Vec3 center, int range, string c) {
@@ -428,6 +976,20 @@ void Silver::Drawing::OvalHollow(Vec3 center, int radiusX, int radiusY, string c
   }
 }
 
+void Silver::Drawing::draw(Vec3 pos, string c) {
+  mesh p;
+  p.object.name = "\0";
+  p.object.position = pos;
+  p.object.number = silver.sprites_count++;
+  p.shape = c;
+  p.transparency = 0;
+
+  workspace.insert({
+    p.object.number,
+    p
+  });
+}
+
 void Silver::Rectangle(string name, int number, Vec3 topLeft, int width, int height) {
   for (int i = 0; i < width; ++i) {
     for (int j = 0; j < height; ++j) {
@@ -469,18 +1031,6 @@ void Silver::RectangleHollow(string name, int number, Vec3 topLeft, int width, i
   }
 }
 
-void Silver::Drawing::draw(Vec3 pos, string c) {
-  mesh p;
-  p.object.position = pos;
-  p.object.number = silver.sprites_count++;
-  p.shape = c;
-  p.transparency = 0;
-
-  workspace.insert({
-    p.object.number,
-    p
-  });
-}
 void Silver::Circle(string name, int number, Vec3 center, int radius) {
   for (int y = center.y - radius; y <= center.y + radius; ++y) {
     for (int x = center.x - radius; x <= center.x + radius; ++x) {
@@ -604,33 +1154,6 @@ void Silver::sprayRectangle(int spawns, Vec3 center, Vec3 scale, string name, in
   }
 }
 
-void Silver::debug(const std::string & message,
-  const std::string & mode) {
-
-  char cwd[PATH_MAX];
-  if (getcwd(cwd, sizeof(cwd)) != nullptr) {
-
-    std::string icon_path = std::string(cwd) + "/";
-
-    if (mode == "w" || mode == "W") {
-      icon_path += "warning.ico";
-    } else if (mode == "q" || mode == "Q") {
-      icon_path += "question.ico";
-    } else if (mode == "s" || mode == "S") {
-      icon_path += "subtraction.ico";
-    } else if (mode == "p" || mode == "P" || mode == "d" || mode == "D") {
-      icon_path += "positive.ico";
-    } else if (mode == "e" || mode == "E") {
-      icon_path += "error.ico";
-    } else {
-
-      icon_path += mode;
-    }
-
-    std::string command = "notify-send -i '" + icon_path + "' 'Debug Alarm' '" + message + "'";
-    system(command.c_str());
-  }
-}
 void Silver::sprayOval(int spawns, Vec3 center, Vec3 scale, string name, int number) {
   srand(static_cast < unsigned int > (time(nullptr)));
 
@@ -686,587 +1209,42 @@ void Silver::sprayLine(int spawns, Vec3 start, Vec3 end, string name, int number
   }
 }
 
-void Silver::Camera::setCam3(Vec3 pos, Vec3 scale) {
-  silver.camera.CameraPos = pos;
-  silver.camera.CameraScale = scale;
-}
+void Silver::debug(const std::string & message,
+  const std::string & mode) {
 
-void Silver::Camera::setCam2(Vec3 pos, Vec3 scale) {
-  silver.camera.CameraPos = {
-    pos.x,
-    pos.y,
-    silver.camera.CameraPos.z
-  };
-  silver.camera.CameraScale = {
-    pos.x,
-    pos.y,
-    silver.camera.CameraScale.z
-  };
-}
+  char cwd[PATH_MAX];
+  if (getcwd(cwd, sizeof(cwd)) != nullptr) {
 
-int getObjectIdAtCoordinates(Vec3 pos) {
+    std::string icon_path = std::string(cwd) + "/";
 
-  for (const auto & entry: workspace) {
-    const auto & object = entry.second;
-
-    if (pos == entry.second.object.position) {
-      return entry.first;
-    }
-  }
-
-  return -1;
-}
-
-std::string truncateToCellSize(const std::string & cellContent, int cellSize) {
-  std::string result;
-  int currentWidth = 0;
-  size_t i = 0;
-
-  while (i < cellContent.size()) {
-
-    unsigned char ch = cellContent[i];
-    int charBytes = 1;
-
-    if ((ch & 0x80) != 0) {
-      if ((ch & 0xE0) == 0xC0) {
-        charBytes = 2;
-      } else if ((ch & 0xF0) == 0xE0) {
-        charBytes = 3;
-      } else if ((ch & 0xF8) == 0xF0) {
-        charBytes = 4;
-      }
-    }
-
-    if (currentWidth + 1 > cellSize) {
-      break;
-    }
-
-    result += cellContent.substr(i, charBytes);
-    currentWidth += 1;
-
-    i += charBytes;
-  }
-
-  return result;
-}
-
-void displayText(const string & text, int scaleX, int maxLeftWidth, bool isTop, int offsetX) {
-  if (!text.empty()) {
-    stringstream ss(text);
-    string line;
-    cout << "\n";
-    while (getline(ss, line)) {
-      int padding = (scaleX * silver.camera.cellSize - line.size()) / 2 + offsetX;
-      padding = std::max(0, padding + maxLeftWidth);
-      cout << string(padding, ' ') << line << endl;
-    }
-  }
-}
-void Silver::Camera::printCam() {
-  if (isFirst) {
-    silver.setRawMode();
-    silver.clear();
-  }
-
-  vector < vector < string >> buffer(
-    silver.camera.CameraScale.y, vector < string > (silver.camera.CameraScale.x, null_rep)
-  );
-
-  float radians = silver.camera.cameraRotation * (M_PI / 180.0);
-  float cosTheta = cos(radians);
-  float sinTheta = sin(radians);
-
-  int centerX = silver.camera.CameraScale.x / 2;
-  int centerY = silver.camera.CameraScale.y / 2;
-
-  bool sign = false;
-  string signMessage, signIcon, objectName;
-
-  for (const auto & entry: workspace) {
-    const auto & obj = entry.second;
-
-    int dx, dy, dz;
-
-    if (obj.Components.isUI) {
-
-      dx = (obj.object.position.x - 1048576) - silver.camera.CameraScale.x / 2;
-      dy = (obj.object.position.y - 1048576) - silver.camera.CameraScale.y / 2;
+    if (mode == "w" || mode == "W") {
+      icon_path += "warning.ico";
+    } else if (mode == "q" || mode == "Q") {
+      icon_path += "question.ico";
+    } else if (mode == "s" || mode == "S") {
+      icon_path += "subtraction.ico";
+    } else if (mode == "p" || mode == "P" || mode == "d" || mode == "D") {
+      icon_path += "positive.ico";
+    } else if (mode == "e" || mode == "E") {
+      icon_path += "error.ico";
     } else {
 
-      dx = obj.object.position.x - silver.camera.CameraPos.x;
-      dy = obj.object.position.y - silver.camera.CameraPos.y;
+      icon_path += mode;
     }
 
-    dz = obj.object.position.z - silver.camera.CameraPos.z;
-
-    int rotatedX = round(cosTheta * dx + sinTheta * dy) + centerX;
-    int rotatedY = round(-sinTheta * dx + cosTheta * dy) + centerY;
-
-    if (silver.camera.isFlippedHorizonal == -1) {
-      rotatedX = silver.camera.CameraScale.x - rotatedX - 1;
-    }
-    if (silver.camera.isFlippedVertical == -1) {
-      rotatedY = silver.camera.CameraScale.y - rotatedY - 1;
-    }
-
-    if (rotatedX >= 0 && rotatedX < silver.camera.CameraScale.x &&
-      rotatedY >= 0 && rotatedY < silver.camera.CameraScale.y &&
-      dz >= -silver.camera.CameraScale.z / 2 && dz <= silver.camera.CameraScale.z / 2) {
-
-      if (obj.transparency == 0) {
-        buffer[rotatedY][rotatedX] = obj.shape;
-
-        if (!obj.Components.signMessage.empty()) {
-          signMessage = obj.Components.signMessage;
-          sign = true;
-          signIcon = obj.shape;
-          objectName = obj.object.name;
-        }
-      }
-    }
-  }
-
-  int mouseX = silver.mouse.cursorPositionX;
-  int mouseY = silver.mouse.cursorPositionY;
-
-  vector < string > leftText, rightText;
-  int leftTextLines = 0, rightTextLines = 0;
-
-  if (!silver.camera.rightText.empty()) {
-    stringstream ss(silver.camera.rightText);
-    string line;
-    while (getline(ss, line)) {
-      rightText.push_back(line);
-      rightTextLines++;
-    }
-  }
-
-  int maxLeftWidth = 0, maxRightWidth = 0;
-  for (const auto & line: leftText) {
-    maxLeftWidth = std::max(maxLeftWidth, static_cast < int > (line.size()));
-  }
-  for (const auto & line: rightText) {
-    maxRightWidth = std::max(maxRightWidth, static_cast < int > (line.size()));
-  }
-
-  int tl = silver.camera.leftAlign == 0 ? silver.camera.CameraScale.y / 2 - leftTextLines / 2 :
-    (silver.camera.leftAlign == 1 ? 0 : silver.camera.CameraScale.y - leftTextLines);
-  int tr = silver.camera.rightAlign == 0 ? silver.camera.CameraScale.y / 2 - rightTextLines / 2 :
-    (silver.camera.rightAlign == 1 ? 0 : silver.camera.CameraScale.y - rightTextLines);
-
-  int offsetX = silver.camera.CameraConsolePos.x;
-  int offsetY = silver.camera.CameraConsolePos.y;
-
-  switch (anchor) {
-  case 0:
-
-    break;
-  case 1:
-    offsetX -= silver.camera.CameraScale.x / 2;
-    break;
-  case 2:
-    offsetX -= silver.camera.CameraScale.x;
-    break;
-  case 3:
-    offsetY -= silver.camera.CameraScale.y / 2;
-    break;
-  case 4:
-    offsetX -= silver.camera.CameraScale.x / 2;
-    offsetY -= silver.camera.CameraScale.y / 2;
-    break;
-  case 5:
-    offsetX -= silver.camera.CameraScale.x;
-    offsetY -= silver.camera.CameraScale.y / 2;
-    break;
-  case 6:
-    offsetY -= silver.camera.CameraScale.y;
-    break;
-  case 7:
-    offsetX -= silver.camera.CameraScale.x / 2;
-    offsetY -= silver.camera.CameraScale.y;
-    break;
-  case 8:
-    offsetX -= silver.camera.CameraScale.x;
-    offsetY -= silver.camera.CameraScale.y;
-    break;
-  }
-
-  offsetX = std::max(0, offsetX);
-  offsetY = std::max(0, offsetY);
-
-  for (const auto & line: leftText) {
-    maxLeftWidth = std::max(maxLeftWidth, static_cast < int > (line.size()));
-  }
-
-  int topTextOffsetX = offsetX;
-
-  if (silver.camera.leftAlign == 0) {
-    topTextOffsetX += maxLeftWidth;
-  }
-  int topTextLines = 0;
-  if (!silver.camera.leftText.empty()) {
-    stringstream ss(silver.camera.leftText);
-    string line;
-    while (getline(ss, line)) {
-      leftText.push_back(line);
-      leftTextLines++;
-    }
-  }
-
-  for (const auto & line: leftText) {
-    maxLeftWidth = std::max(maxLeftWidth, static_cast < int > (line.size()));
-  }
-
-  if (silver.camera.leftAlign == 0) {
-    topTextOffsetX += maxLeftWidth;
-  }
-
-  if (!silver.camera.topText.empty()) {
-    stringstream ss(silver.camera.topText);
-    string line;
-
-    while (getline(ss, line)) {
-      int posX = topTextOffsetX + 1;
-      if (posX < 0) {
-
-        line = line.substr(-posX);
-        posX = 0;
-      }
-      silver.gotoxy(posX, offsetY + topTextLines);
-      cout << line << flush;
-      topTextLines++;
-    }
-
-  }
-
-  for (int j = 0; j < silver.camera.CameraScale.y; ++j) {
-
-    string leftLine = (j - tl < leftText.size() && j - tl >= 0) ? leftText[j - tl] : "";
-    leftLine = string(maxLeftWidth - leftLine.size(), ' ') + leftLine;
-
-    string rightLine = (j - tr < rightText.size() && j - tr >= 0) ? rightText[j - tr] : "";
-    rightLine += string(maxRightWidth - rightLine.size(), ' ');
-
-    string line = leftLine + " ";
-    for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
-      string cellContent = (!hideMouse && i == mouseX && j == mouseY) ? mouseIcon : buffer[j][i];
-
-      if (gridMode && cellContent.size() > silver.camera.cellSize) {
-        cellContent = truncateToCellSize(cellContent, silver.camera.cellSize);
-      }
-      if (fillMode && cellContent.size() < silver.camera.cellSize) {
-        cellContent.append(silver.camera.cellSize - cellContent.size(), ' ');
-      }
-
-      line += cellContent;
-    }
-    line += " " + rightLine;
-
-    int currentY = offsetY + j + topTextLines;
-    if (currentY >= 0) {
-      silver.gotoxy(offsetX, currentY);
-      cout << line << flush;
-    }
-  }
-
-  displayText(silver.camera.bottomText, silver.camera.CameraScale.x, maxLeftWidth, false, offsetX);
-
-  isFirst = false;
-
-}
-
-void Silver::setConsoleTitle(const std::string & title) {
-  std::cout << "\033]0;" << title << "\007";
-}
-
-void Silver::Camera::photo() {
-  if (isFirst) {
-    silver.setRawMode();
-    silver.clear();
-  }
-
-  vector < vector < string >> buffer(
-    silver.camera.CameraScale.y, vector < string > (silver.camera.CameraScale.x, null_rep)
-  );
-
-  float radians = silver.camera.cameraRotation * (M_PI / 180.0);
-  float cosTheta = cos(radians);
-  float sinTheta = sin(radians);
-
-  int centerX = silver.camera.CameraScale.x / 2;
-  int centerY = silver.camera.CameraScale.y / 2;
-
-  bool sign = false;
-  string signMessage, signIcon, objectName;
-
-  for (const auto & entry: workspace) {
-    const auto & obj = entry.second;
-
-    int dx = obj.object.position.x - silver.camera.CameraPos.x;
-    int dy = obj.object.position.y - silver.camera.CameraPos.y;
-    int dz = obj.object.position.z - silver.camera.CameraPos.z;
-
-    int rotatedX = round(cosTheta * dx + sinTheta * dy) + centerX;
-    int rotatedY = round(-sinTheta * dx + cosTheta * dy) + centerY;
-
-    if (silver.camera.isFlippedHorizonal == -1) {
-      rotatedX = silver.camera.CameraScale.x - rotatedX - 1;
-    }
-    if (silver.camera.isFlippedVertical == -1) {
-      rotatedY = silver.camera.CameraScale.y - rotatedY - 1;
-    }
-
-    if (rotatedX >= 0 && rotatedX < silver.camera.CameraScale.x &&
-      rotatedY >= 0 && rotatedY < silver.camera.CameraScale.y &&
-      dz >= -silver.camera.CameraScale.z / 2 && dz <= silver.camera.CameraScale.z / 2) {
-
-      if (obj.transparency == 0) {
-        buffer[rotatedY][rotatedX] = obj.shape;
-
-        if (!obj.Components.signMessage.empty()) {
-          signMessage = obj.Components.signMessage;
-          sign = true;
-          signIcon = obj.shape;
-          objectName = obj.object.name;
-        }
-      }
-    }
-  }
-
-  int mouseX = silver.mouse.cursorPositionX;
-  int mouseY = silver.mouse.cursorPositionY;
-
-  vector < string > leftText, rightText;
-  int leftTextLines = 0, rightTextLines = 0;
-
-  if (!silver.camera.leftText.empty()) {
-    stringstream ss(silver.camera.leftText);
-    string line;
-    while (getline(ss, line)) {
-      leftText.push_back(line);
-      leftTextLines++;
-    }
-  }
-
-  if (!silver.camera.rightText.empty()) {
-    stringstream ss(silver.camera.rightText);
-    string line;
-    while (getline(ss, line)) {
-      rightText.push_back(line);
-      rightTextLines++;
-    }
-  }
-
-  int maxLeftWidth = 0, maxRightWidth = 0;
-  for (const auto & line: leftText) {
-    maxLeftWidth = std::max(maxLeftWidth, static_cast < int > (line.size()));
-  }
-  for (const auto & line: rightText) {
-    maxRightWidth = std::max(maxRightWidth, static_cast < int > (line.size()));
-  }
-
-  int tl = silver.camera.leftAlign == 0 ? silver.camera.CameraScale.y / 2 - leftTextLines / 2 :
-    (silver.camera.leftAlign == 1 ? 0 : silver.camera.CameraScale.y - leftTextLines);
-  int tr = silver.camera.rightAlign == 0 ? silver.camera.CameraScale.y / 2 - rightTextLines / 2 :
-    (silver.camera.rightAlign == 1 ? 0 : silver.camera.CameraScale.y - rightTextLines);
-
-  int offsetX = silver.camera.CameraConsolePos.x;
-  int offsetY = silver.camera.CameraConsolePos.y;
-  displayText(silver.camera.topText, silver.camera.CameraScale.x, maxLeftWidth, true, offsetX);
-
-  for (int j = 0; j < silver.camera.CameraScale.y; ++j) {
-    string leftLine = (j - tl < leftText.size() && j - tl >= 0) ? leftText[j - tl] : "";
-    leftLine = string(maxLeftWidth - leftLine.size(), ' ') + leftLine;
-
-    string rightLine = (j - tr < rightText.size() && j - tr >= 0) ? rightText[j - tr] : "";
-    rightLine += string(maxRightWidth - rightLine.size(), ' ');
-
-    string line = leftLine + " ";
-    for (int i = 0; i < silver.camera.CameraScale.x; ++i) {
-      string cellContent = (!hideMouse && i == mouseX && j == mouseY) ? mouseIcon : buffer[j][i];
-      if (gridMode && cellContent.size() > silver.camera.cellSize) {
-        cellContent = truncateToCellSize(cellContent, silver.camera.cellSize);
-      }
-      if (fillMode && cellContent.size() < silver.camera.cellSize) {
-        cellContent.append(silver.camera.cellSize - cellContent.size(), ' ');
-      }
-
-      line += cellContent;
-    }
-    line += " " + rightLine;
-
-    cout << line << flush << endl;
-  }
-
-  displayText(silver.camera.bottomText, silver.camera.CameraScale.x, maxLeftWidth, false, offsetX);
-
-  if (sign) {
-    cout << "\n\n*************************************\n" <<
-      signIcon << string(silver.camera.cellSize, ' ') << objectName << endl <<
-      signMessage << endl;
-  }
-
-  isFirst = false;
-}
-
-void Silver::setWorldBounds(Vec3 world) {
-  WorldX = world.x;
-  WorldY = world.y;
-}
-
-vector < int > Silver::seek(string objectName) {
-  vector < int > numbers;
-  for (auto entry: workspace) {
-    if (entry.second.object.name == objectName) {
-      numbers.push_back(entry.second.object.number);
-    }
-  }
-  return numbers;
-}
-vector < int > Silver::findObjects(string name, variant < vector < int > , int > number) {
-  vector < int > numbers;
-
-  for (auto & entry: workspace) {
-
-    if (entry.second.object.name == name) {
-
-      if (holds_alternative < vector < int >> (number)) {
-        vector < int > numList = get < vector < int >> (number);
-
-        if (find(numList.begin(), numList.end(), entry.second.object.number) != numList.end()) {
-          numbers.push_back(entry.first);
-        }
-      } else if (holds_alternative < int > (number)) {
-        int num = get < int > (number);
-
-        if (entry.second.object.number == num || num == all_numbers) {
-          numbers.push_back(entry.first);
-        }
-      }
-    }
-  }
-
-  return numbers;
-}
-
-void Silver::destroy(int objID) {
-
-  vector < int > keysToRemove;
-  vector < string > globalKeysToRemove;
-
-  for (const auto & entry: workspace) {
-    if (entry.first == objID) {
-      keysToRemove.push_back(entry.first);
-    }
-  }
-
-  for (const auto & key: keysToRemove) {
-    workspace.erase(key);
-  }
-
-  for (const auto & key: globalKeysToRemove) {
-    prefabrications.erase(key);
+    std::string command = "notify-send -i '" + icon_path + "' 'Debug Alarm' '" + message + "'";
+    system(command.c_str());
   }
 }
 
-void Silver::kill(int objID) {
+bool isValidName(const string & name) {
+  for (char c: name) {
 
-  vector < int > keysToKill;
-
-  for (const auto & entry: workspace) {
-    if (entry.first == objID) {
-      keysToKill.push_back(entry.first);
+    if (!isprint(c) || c == '\n' || c == '\r') {
+      return false;
     }
   }
-
-  for (const auto & key: keysToKill) {
-    killedSprites.insert({
-      key,
-      workspace.find(key) -> second
-    });
-    workspace.erase(key);
-  }
-}
-
-void Silver::revive(int objID) {
-
-  vector < int > keysToRevive;
-
-  for (const auto & entry: killedSprites) {
-    if (entry.first == objID) {
-      keysToRevive.push_back(entry.first);
-    }
-  }
-
-  for (const auto & key: keysToRevive) {
-    workspace.insert({
-      key,
-      killedSprites.find(key) -> second
-    });
-    killedSprites.erase(key);
-  }
-}
-
-Vec2 Silver::Camera::getScreenPosition(Vec3 pos) {
-  int worldX = pos.x;
-  int worldY = pos.y;
-  float radians = silver.camera.cameraRotation * (M_PI / 180.0);
-  float cosTheta = cos(radians);
-  float sinTheta = sin(radians);
-
-  int centerX = silver.camera.CameraScale.x / 2;
-  int centerY = silver.camera.CameraScale.y / 2;
-
-  float dx = worldX - silver.camera.CameraPos.x;
-  float dy = worldY - silver.camera.CameraPos.y;
-
-  int rotatedX = round(cosTheta * dx + sinTheta * dy);
-  int rotatedY = round(-sinTheta * dx + cosTheta * dy);
-
-  if (silver.camera.isFlippedHorizonal == -1) {
-    rotatedX = WorldX - rotatedX - 1;
-  }
-  if (silver.camera.isFlippedVertical == -1) {
-    rotatedY = WorldY - rotatedY - 1;
-  }
-
-  int screenX = rotatedX + centerX;
-  int screenY = rotatedY + centerY;
-
-  return {
-    screenX,
-    screenY
-  };
-}
-
-void Silver::clear() {
-  system("clear");
-}
-
-void Silver::Camera::flipCamera(int X, int Y) {
-  if (X == 1 || X == -1) {
-    silver.camera.isFlippedHorizonal *= X;
-  }
-  if (Y == 1 || Y == -1) {
-    silver.camera.isFlippedVertical *= Y;
-  }
-}
-
-void Silver::Camera::SetCameraFlip(int X, int Y) {
-  if (X == 1 || X == -1) {
-    silver.camera.isFlippedHorizonal = X;
-  }
-  if (Y == 1 || Y == -1) {
-    silver.camera.isFlippedVertical = Y;
-  }
-}
-
-void Silver::Camera::pivotCamera(int angle) {
-  silver.camera.cameraRotation = angle;
-}
-
-void Silver::Camera::addPivotCamera(int angle) {
-  silver.camera.cameraRotation += angle;
+  return true;
 }
 
 void Silver::clean(Vec3 first, Vec3 second) {
@@ -1285,11 +1263,53 @@ void Silver::clean(Vec3 first, Vec3 second) {
   }
 }
 
+void Silver::saveChunk(Vec3 range1, Vec3 range2,
+  const string & fileName,
+    const string & mode) {
+  ofstream fp;
+
+  if (mode == "a") {
+    fp.open(fileName, ios::app);
+  } else {
+    fp.open(fileName, ios::trunc);
+  }
+
+  if (!fp.is_open()) {
+    silver.debug("From \"void Silver::loadChunk(const string& file)\" : Error opening file.", "e");
+    return;
+  }
+
+  Vec3 camPos = silver.camera.CameraPos;
+  Vec3 camScale = silver.camera.CameraScale;
+  fp << "📷 " << camPos.x << " " << camPos.y << " " << camPos.z << " " <<
+    camScale.x << " " << camScale.y << " " << camScale.z << "\n";
+
+  for (auto & objIt: workspace) {
+    Vec3 pos = objIt.second.object.position;
+
+    if (pos.x >= std::min(range1.x, range2.x) && pos.x <= std::max(range1.x, range2.x) &&
+      pos.y >= std::min(range1.y, range2.y) && pos.y <= std::max(range1.y, range2.y) &&
+      pos.z >= std::min(range1.z, range2.z) && pos.z <= std::max(range1.z, range2.z)) {
+
+      if (objIt.second.object.name == "\0") {
+        fp << "🗺️ \"" << objIt.second.shape << "\" " <<
+          pos.x << " " << pos.y << " " << pos.z << "\n";
+      } else {
+        fp << "➕ " << objIt.second.object.name << " " <<
+          objIt.second.object.number << " " <<
+          pos.x << " " << pos.y << " " << pos.z << "\n";
+      }
+    }
+  }
+
+  fp.close();
+}
+
 void Silver::loadChunk(const string & file) {
   ifstream fp(file);
 
   if (!fp.is_open()) {
-    cerr << "Error opening file.\n";
+    silver.debug("From \"void Silver::loadChunk(const string& file)\" Error: Error opening file.", "e");
     return;
   }
 
@@ -1318,7 +1338,6 @@ void Silver::loadChunk(const string & file) {
       char context[BUFFER_SIZE];
       int coord1, coord2, coord3;
       if (sscanf(buffer.c_str() + sizeof("🗺️") - 1, " \"%[^\"]\" %d %d %d", context, & coord1, & coord2, & coord3) == 4) {
-
         silver.drawing.draw(Vec3(coord1, coord2, coord3), context);
       }
     } else if (buffer.rfind("💥", 0) == 0) {
@@ -1334,6 +1353,14 @@ void Silver::loadChunk(const string & file) {
           0
         });
       }
+    } else if (buffer.rfind("➕", 0) == 0) {
+      char name[BUFFER_SIZE];
+      int type, coord1, coord2, coord3;
+
+      if (sscanf(buffer.c_str() + sizeof("➕") - 1, " \"%[^\"]\" %d %d %d %d", name, & type, & coord1, & coord2, & coord3) == 5) {
+        silver.place(name, type, Vec3(coord1, coord2, coord3));
+      }
+
     }
   }
 }
@@ -1344,11 +1371,11 @@ void Silver::Camera::moveCamera(Vec3 V) {
 }
 
 void Silver::Camera::shakeCameraOnce(float intensity) {
-  float offsetX = intensity * (rand() % 100 / 100. f - 0. f);
-  float offsetY = intensity * (rand() % 100 / 100. f - 0. f);
+  float offsetX = intensity * ((rand() % 100 / 100.0 f) * (rand() % 2 == 0 ? 1 : -1));
+  float offsetY = intensity * ((rand() % 100 / 100.0 f) * (rand() % 2 == 0 ? 1 : -1));
 
-  silver.camera.CameraPos.x += (int) offsetX;
-  silver.camera.CameraPos.y += (int) offsetY;
+  silver.camera.CameraPos.x += static_cast < int > (offsetX);
+  silver.camera.CameraPos.y += static_cast < int > (offsetY);
 }
 
 void Silver::Camera::shakeCamera(float intensity, int shakes, float delayBetweenShakes) {
@@ -1356,8 +1383,8 @@ void Silver::Camera::shakeCamera(float intensity, int shakes, float delayBetween
   float originalY = silver.camera.CameraPos.y;
 
   for (int i = 0; i < shakes; ++i) {
-    float offsetX = intensity * (rand() % 100 / 100. f - 0. f);
-    float offsetY = intensity * (rand() % 100 / 100. f - 0. f);
+    float offsetX = intensity * (rand() % 100 / 100 - 0);
+    float offsetY = intensity * (rand() % 100 / 100 - 0);
 
     silver.camera.CameraPos.x = originalX + (int) offsetX;
     silver.camera.CameraPos.y = originalY + (int) offsetY;
@@ -1446,6 +1473,12 @@ void startLoading() {
 
 void Silver::createObject(const string name,
   const string shape) {
+
+  if (!isValidName(name)) {
+    silver.debug("From \"void Silver::createObject(const string& name, const string& shape)\" : Invalid object name containing unprintable characters ", "e");
+    return;
+  }
+
   if (prefabrications.count(name) > 0) {
     return;
   }
@@ -1454,6 +1487,7 @@ void Silver::createObject(const string name,
   A.name = name;
   A.shape = shape;
   A.transparency = 0;
+
   prefabrications[name] = A;
 }
 
@@ -1571,7 +1605,7 @@ void Silver::Camera::startVideo(int FPS) {
   videoThread = thread([this, FPS] {
     while (isRunningCam) {
       this -> printCam();
-      this_thread::sleep_for(chrono::milliseconds(static_cast < int > (1000. f / FPS)));
+      this_thread::sleep_for(chrono::milliseconds(static_cast < int > (1000 / FPS)));
     }
   });
 }
