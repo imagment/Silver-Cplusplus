@@ -1,7 +1,7 @@
-> Warning:
-> This documentation is outdated.
-> The documentation would be modified shortly.
-> Thanks for your patience.
+> Warning: <br>
+> This documentation is outdated. <br>
+> The documentation would be modified shortly. <br>
+> Thanks for your patience. <br>
 
 # game.hpp Documentation
 
