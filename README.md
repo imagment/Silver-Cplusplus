@@ -9,8 +9,8 @@
 
 - [Functions](#functions)
   - [Vectors](#vectors)
-  - [Debugging] (#debuging)
   - [Camera](#camera)
+  - [Debugging](#debuging)
   - [Object Declaration](#object-declaration)
   - [Object Movement](#object-movement)
 
