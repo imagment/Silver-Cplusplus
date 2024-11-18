@@ -1,6 +1,6 @@
 > Warning: <br>
 > This documentation is outdated. <br>
-> The documentation would be modified shortly. <br>
+> The documentation is getting modified. <br>
 > Thanks for your patience. <br>
 
 # game.hpp Documentation
@@ -9,6 +9,7 @@
 
 - [Functions](#functions)
   - [Vectors](#vectors)
+  - [Debugging] (#debuging)
   - [Camera](#camera)
   - [Object Declaration](#object-declaration)
   - [Object Movement](#object-movement)
@@ -54,8 +55,6 @@ Vec2 v1(3, 4);
 Vec3 v2(1, 2, 3);
 Vec3 result = v1 + v2 + vec3.up; // result is (4, 7, 3)
 ```
-
-**NOTE**: While the Vec2 class is available for convenience when working with 2D vectors, all vector operations and parameters in the system ultimately use Vec3. Whenever a Vec2 is used, it is automatically converted into a Vec3 by setting the z component to 0.
 
 ### Camera
 **NOTE: All camera-related functions are in the class 'Camera'**
@@ -112,13 +111,11 @@ silver.camera.stopVideo();
 ```
 
 ### Advanced Camera Functions & Cells
-There are two types of camera exceptions when cells are empty:
-1. **Null Object Replacement (🧱)**: Displayed when a cell has no objects.
-2. **Out-of-bounds Replacement (🟦)**: Displayed when a cell is out of the world range and when a cell has no objects.
+Null Object Replacement (🧱)**: Displayed when a cell has no objects.
 
 You can configure these using:
 ```cpp
-void configCameraException(string o, string n); // o = out-of-bounds, n = null object replacement
+void configCameraException(string n); // n = null object replacement
 ```
 <br>
 And if you want to set the world bounds, you can use the following function:
@@ -131,6 +128,26 @@ The default cell size is 2. You can adjust the cell size using:
 ```cpp
 void cell(int c);
 ```
+
+###Debug
+When you are rendering the camera, it is not easy to debug something to the console. <br>
+Then, you can use `silver.debug` function. <br>
+Example:
+```
+silver.debug("Hello World!","d");
+
+```
+"d" is for debug, and there are other types of debugs as well. <br>
+"w" : Warning <br>
+"p" or "d" : Debug <br>
+"s" : Subtraction <br>
+"q" : Question <br>
+"e" : Error <br>
+You can put a name of a `.ico` file instead of those abbreviations <br>
+You can use capital letters when you write those abbreviations <br>
+<br>
+How this using this function will notify you <br>
+![屏幕截图 2024-11-18 162942](https://github.com/user-attachments/assets/579be763-35dd-4ea4-9049-4f2a15996012)
 
 ### Object Declaration
 
