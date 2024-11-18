@@ -1371,8 +1371,8 @@ void Silver::Camera::moveCamera(Vec3 V) {
 }
 
 void Silver::Camera::shakeCameraOnce(float intensity) {
-  float offsetX = intensity * ((rand() % 100 / 100.0 f) * (rand() % 2 == 0 ? 1 : -1));
-  float offsetY = intensity * ((rand() % 100 / 100.0 f) * (rand() % 2 == 0 ? 1 : -1));
+  float offsetX = intensity * ((rand() % 100 / 100) * (rand() % 2 == 0 ? 1 : -1));
+  float offsetY = intensity * ((rand() % 100 / 100) * (rand() % 2 == 0 ? 1 : -1));
 
   silver.camera.CameraPos.x += static_cast < int > (offsetX);
   silver.camera.CameraPos.y += static_cast < int > (offsetY);
@@ -1647,7 +1647,7 @@ vector < int > Silver::spriteAt3(Vec3 pos) {
 
   return names;
 }
-vector < int > Silver::spriteAt2(Vec3 pos) {
+vector < int > Silver::spriteAt2(Vec2 pos) {
   vector < int > names;
 
   for (auto & entry: workspace) {
