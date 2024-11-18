@@ -129,7 +129,7 @@ The default cell size is 2. You can adjust the cell size using:
 void cell(int c);
 ```
 
-###Debug
+###Debuging
 When you are rendering the camera, it is not easy to debug something to the console. <br>
 Then, you can use `silver.debug` function. <br>
 Example:
