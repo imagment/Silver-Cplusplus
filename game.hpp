@@ -26,11 +26,7 @@
 #define all_numbers - 1
 #define origin - 2
 #define immediate - 1
-#define upKey 65
-#define downKey 66
-#define leftKey 68
-#define rightKey 67
-#define escapeKey 27
+
 
 #define pointer "OBJECT_POINTER"
 #define World map < int, mesh >
@@ -471,8 +467,7 @@ class Silver {
     string > lastFrame;
     void setCam3(Vec3 pos, Vec3 scale);
     void setCam2(Vec3 pos, Vec3 scale);
-    void setCam3(int objId, Vec3 pos, Vec3 scale);
-    void setCam2(int objId, Vec3 pos, Vec3 scale);
+
     void printCam();
     void flipCamera(int X, int Y);
     Vec2 getScreenPosition(Vec3 pos);
@@ -508,9 +503,15 @@ class Silver {
   vector < int > seek(string objectName);
 
   vector < int > spriteAt3(Vec3 pos);
-  vector < int > spriteAt2(Vec3 pos);
+  vector < int > spriteAt2(Vec2 pos);
 
   class Keyboard {
+    const int upKey = 65
+    , downKey = 66
+    , leftKey = 68
+    , rightKey = 67
+    , escapeKey = 27;
+    
     public: map < char,
     int > keys;
     char keyBuffer;
