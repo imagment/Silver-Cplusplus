@@ -154,17 +154,28 @@ How this using this function will notify you <br>
 To draw objects on the map, use the following functions:
 
 ```cpp
-void draw(Vec3 pos, std::string c); // Draws a string at position pos
-void drawLine(Vec3 start, Vec3 end, std::string c); // Draws a line
-void drawRectangle(Vec3 topLeft, int width, int height, std::string c); // Draws a rectangle
-void drawCircle(Vec3 center, int radius, std::string c); // Draws a filled circle
-void drawCircleHollow(Vec3 center, int radius, std::string c); // Draws a hollow circle
-void drawRectangleHollow(Vec3 topLeft, int width, int height, std::string c); // Draws a hollow rectangle
+void Drawing::draw(Vec3 pos, std::string c); // Draws a string at position pos
+void Drawing::Line(Vec3 start, Vec3 end, std::string c); // Draws a line
+void Drawing::Rectangle(Vec3 topLeft, int width, int height, std::string c); // Draws a rectangle
+void Drawing::Circle(Vec3 center, int radius, std::string c); // Draws a filled circle
+void Drawing::CircleHollow(Vec3 center, int radius, std::string c); // Draws a hollow circle
+void Drawing::Oval(Vec3 center, int radiusX, int radiusY, string c);
+void Drawing::OvalHollow(Vec3 center, int radiusX, int radiusY, string c);
+
+void Drawing::sprayRectangle(int spawns, Vec3 center, Vec3 scale, string c);
+void Drawing::sprayOval(int spawns, Vec3 center, Vec3 scale, string c);
+void Drawing::spray(int spawns, Vec3 center, int range, string c);
+void Drawing::sprayLine(int spawns, Vec3 start, Vec3 end, string c);
 ```
-However, drawings on the map cannot function. <br>
-<br>
-To create an object, you can use the following function: 
+Drawing functions are in class 'Drawing' and can accessed with 'draw' <br>
+Example usage: <br>
 ```cpp
+draw.draw(Vec3(2,4,3),"#");
+```
+
+<br>
+To create an object, you can use the following function: <br>
+``` cpp
 void createObject(const std::string name, const std::string& shape);
 ```
 This creates an object named `std::string name` and will look like `std::string& shape`. <br>
