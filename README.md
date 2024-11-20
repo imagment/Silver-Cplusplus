@@ -154,18 +154,18 @@ How this using this function will notify you <br>
 To draw objects on the map, use the following functions:
 
 ```cpp
-void Drawing::draw(Vec3 pos, std::string c); // Draws a string at position pos
-void Drawing::Line(Vec3 start, Vec3 end, std::string c); // Draws a line
-void Drawing::Rectangle(Vec3 topLeft, int width, int height, std::string c); // Draws a rectangle
-void Drawing::Circle(Vec3 center, int radius, std::string c); // Draws a filled circle
-void Drawing::CircleHollow(Vec3 center, int radius, std::string c); // Draws a hollow circle
-void Drawing::Oval(Vec3 center, int radiusX, int radiusY, string c);
-void Drawing::OvalHollow(Vec3 center, int radiusX, int radiusY, string c);
+void draw(Vec3 pos, std::string c); 
+void Line(Vec3 start, Vec3 end, std::string c);
+void Rectangle(Vec3 topLeft, int width, int height, std::string c); 
+void Circle(Vec3 center, int radius, std::string c); 
+void CircleHollow(Vec3 center, int radius, std::string c);
+void Oval(Vec3 center, int radiusX, int radiusY, string c);
+void OvalHollow(Vec3 center, int radiusX, int radiusY, string c);
 
-void Drawing::sprayRectangle(int spawns, Vec3 center, Vec3 scale, string c);
-void Drawing::sprayOval(int spawns, Vec3 center, Vec3 scale, string c);
-void Drawing::spray(int spawns, Vec3 center, int range, string c);
-void Drawing::sprayLine(int spawns, Vec3 start, Vec3 end, string c);
+void sprayRectangle(int spawns, Vec3 center, Vec3 scale, string c);
+void sprayOval(int spawns, Vec3 center, Vec3 scale, string c);
+void spray(int spawns, Vec3 center, int range, string c);
+void sprayLine(int spawns, Vec3 start, Vec3 end, string c);
 ```
 Drawing functions are in class 'Drawing' and can accessed with 'draw' <br>
 Example usage: <br>
@@ -174,6 +174,7 @@ draw.draw(Vec3(2,4,3),"#");
 ```
 
 <br>
+### Object Declaration
 To create an object, you can use the following function: <br>
 ``` cpp
 void createObject(const std::string name, const std::string& shape);
@@ -185,6 +186,8 @@ If you create an object, you can use one of these functions:
 ```cpp
 int place(string objectName, int number, Vec3 position); // Places an object in the world
 int put(string objectName, Vec3 position); // Places an object in the world with a unique number
+
+int unoccupied(string objectName); // Returns a number that is not currently being used by any object with the same name (
 ```
 When an object gets placed on the map, it requires a number. Also, some of the 2 objects might have the same number.
 ```cpp
@@ -192,16 +195,32 @@ silver.place("player", 1, Vec2(10, 10));
 silver.place("player", 1, Vec2(10, 11)); // This is allowed
 ```
 Objects are numbered for unique identification and manipulation within the world. So you can use the `void put(string objectName, Vec3 position);` function if the number doesn't matter much. <br>
-Also, placing functions like `place` and `put` returns an integer. That integer is used in doing most of the operations.
+Also, placing functions like `place` and `put` returns an integer. That integer is used in doing most of the operations. 
+
+```cpp
+void Line(string name, int number, Vec3 start, Vec3 end); 
+void Rectangle(string name, int number, Vec3 topLeft, int width, int height);
+void Circle(string name, int number, Vec3 center, int radius); 
+void CircleHollow(string name, int number, Vec3 center, int radius); 
+void Oval(string name, int number, Vec3 center, int radiusX, int radiusY);
+void OvalHollow(string name, int number, Vec3 center, int radiusX, int radiusY);
+
+void sprayRectangle(string name, int number, int spawns, Vec3 center, Vec3 scale);
+void sprayOval(string name, int number, int spawns, Vec3 center, Vec3 scale);
+void spray(string name, int number, int spawns, Vec3 center, int range);
+void sprayLine(string name, int number, int spawns, Vec3 start, Vec3 end);
+```
+Use these functions (Not in class `Drawing`) to place the same object in a certain shape.
 
 ### General Functions
+These are some useful functions that could be used frequently in game development.
 
 ### Object Movement
 
 ```cpp
 void moveObjectXY(const variant < int, vector < int >> objectID, Vec3 pos);
-  void moveObjectX(const variant < int, vector < int >> objectID, int x_offset);
-  void moveObjectY(const variant < int, vector < int >> objectID, int y_offset);
+void moveObjectX(const variant < int, vector < int >> objectID, int x_offset);
+void moveObjectY(const variant < int, vector < int >> objectID, int y_offset);
 void moveObjectPosition(const variant < int, vector < int >> objectID, Vec3 pos);
 
 
