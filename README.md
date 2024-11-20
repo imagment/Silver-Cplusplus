@@ -130,14 +130,14 @@ void cell(int c);
 ```
 
 ### Debugging
-When you are rendering the camera, it is not easy to debug something to the console. <br>
+When you are rendering the camera, debugging something to the console is not easy. <br>
 Then, you can use `silver.debug` function. <br>
 Example:
 ```
 silver.debug("Hello World!","d");
 
 ```
-"d" is for debug, and there are other types of debugs as well. <br>
+"d" is for debug, and there are other types of debugs. <br>
 "w" : Warning <br>
 "p" or "d" : Debug <br>
 "s" : Subtraction <br>
@@ -181,48 +181,50 @@ void createObject(const std::string name, const std::string& shape);
 This creates an object named `std::string name` and will look like `std::string& shape`. <br>
 <br>
 If you create an object, you can use one of these functions:
+
 ```cpp
-void place(string objectName, int number, Vec3 position); // Places an object in the world
-void put(string objectName, Vec3 position); // Places an object in the world with Number 0
-void placeSpray(const string objectName, int spawns, Vec3 center, int range);  // Sprays the object
-void placeExactSpray(const string objectName, int count, Vec3 startPosition); // Sprays the object. But object numbers does not change
+int place(string objectName, int number, Vec3 position); // Places an object in the world
+int put(string objectName, Vec3 position); // Places an object in the world with a unique number
 ```
 When an object gets placed on the map, it requires a number. Also, some of the 2 objects might have the same number.
 ```cpp
 silver.place("player", 1, Vec2(10, 10));
 silver.place("player", 1, Vec2(10, 11)); // This is allowed
 ```
-Objects are numbered for unique identification and manipulation within the world. So you can use `void put(string objectName, Vec3 position);` function if that doesn't matter much.
+Objects are numbered for unique identification and manipulation within the world. So you can use the `void put(string objectName, Vec3 position);` function if the number doesn't matter much. <br>
+Also, placing functions like `place` and `put` returns an integer. That integer is used in doing most of the operations.
+
+### General Functions
 
 ### Object Movement
 
 ```cpp
-void setObjectPositionX(const string& name, const variant<int, vector<int>>& number, Vec3 pos);
-void setObjectPositionY(const string& name, const variant<int, vector<int>>& number, Vec3 pos);
-void setObjectPositionXY(const string& name, const variant<int, vector<int>>& number, Vec3 pos);
-void setObjectPosition(const std::string name, int number, Vec3 pos);
+void moveObjectXY(const variant < int, vector < int >> objectID, Vec3 pos);
+  void moveObjectX(const variant < int, vector < int >> objectID, int x_offset);
+  void moveObjectY(const variant < int, vector < int >> objectID, int y_offset);
+void moveObjectPosition(const variant < int, vector < int >> objectID, Vec3 pos);
 
-void setObjectPositionRandom(const std::string& name, const std::variant<int, std::vector<int>>& number);
-void setObjectPositionToSprite(const std::string& name, int number, const std::string& targetName, int targetNumber);
 
-void moveObjectPositionX(string name, int number, int x_offset);
-void moveObjectPositionY(string name, int number, int y_offset);
-void moveObjectPositionXY(const std::string name, int number, Vec3 pos);
-void moveObjectPosition(const std::string name, int number, Vec3 pos);
+void setObjectRandom(const variant < int, vector < int >> objectID,
+const pair < int, int > & xRange,
+const pair < int, int > & yRange);
 
-void glideObjectPositionRandom(const string& name, variant<int, vector <int>>& number, Vec3 position, float speed);
-void glideObjectPositionX(string name, const std::variant<int, std::vector<int>>& number, int x_offset, float speed);
-void glideObjectPositionY(string name, const variant<int, vector<int>>& number, int y_offset, float speed);
-void glideObjectPositionXY(string name, const variant <vector <int>, int>& number, Vec3 target_pos, float speed);
-void glideObjectPositionToSprite(const string& name, const variant<int, vector<int>>& number,
-                                         const string& target, int targetNumber, float speed);
+void setObjectXY(const variant < int, vector < int >> objectID, Vec3 pos);
+void setObjectX(const variant < int, vector < int >> objectID, Vec3 pos);
+void setObjectY(const variant < int, vector < int >> objectID, Vec3 pos);
+void setObjectPosition(const variant < int, vector < int >> objectID, Vec3 pos);
+void setObjectPositionToSprite(const variant < int, vector < int >> objectIDs, int spriteID);
+
+void glideObjectPositionToSprite(const variant < int, vector < int >> objectIDs, int spriteID, float speed);
+void glideObjectX(const variant < int, vector < int >> & ids, int x_offset, float speed, ...);
+void glideObjectY(const variant < int, vector < int >> & ids, int y_offset, float speed, ...);
+void glideObjectPositionToSprite(const variant < int, vector < int >> objectIDs, int spriteID, float speed);
+
+void glideObjectRandom(const variant < int, vector < int >> & ids,
+const pair < int, int > & xRange,
+const pair < int, int > & yRange, float speed);
+
+void glideObjectXY(const variant < int, vector < int >> & ids,
+const Vec3 & offset, float speed, ...);
 ```
-To move an object, <br>
-- Put the name in `const string& name`.
-- Put the number in `variant<int, vector <int>>& number`.
- - Write `all` in `variant<int, vector <int>>& number` to move all objects with any number.
- - Assign a vector of numbers in `variant<int, vector<int>>& number` to target specific objects with those numbers.
-- Write the vector in `Vec3 position`.
-- If this is a gliding function, write speed on `float speed`.
-<br>
-This would move the object to its destination.
+Check movements.md for more information
