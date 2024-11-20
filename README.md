@@ -1,6 +1,5 @@
 > Warning: <br>
-> This documentation is outdated. <br>
-> The documentation is getting modified. <br>
+> This documentation is getting modified. <br>
 > Thanks for your patience. <br>
 
 # game.hpp Documentation
@@ -176,10 +175,13 @@ draw.draw(Vec3(2,4,3),"#");
 <br>
 ### Object Declaration
 To create an object, you can use the following function: <br>
+
 ``` cpp
-void createObject(const std::string name, const std::string& shape);
+void createEmptyObject(const string name);
+void createObject(const std::string name, const std::string shape);
 ```
-This creates an object named `std::string name` and will look like `std::string& shape`. <br>
+`createObject` creates an object named `name` and will look like `shape`. <br>
+`createEmptyObject` creates an object named `name` and will not be shown. <br>
 <br>
 If you create an object, you can use one of these functions:
 
@@ -198,22 +200,64 @@ Objects are numbered for unique identification and manipulation within the world
 Also, placing functions like `place` and `put` returns an integer. That integer is used in doing most of the operations. 
 
 ```cpp
-void Line(string name, int number, Vec3 start, Vec3 end); 
-void Rectangle(string name, int number, Vec3 topLeft, int width, int height);
-void Circle(string name, int number, Vec3 center, int radius); 
-void CircleHollow(string name, int number, Vec3 center, int radius); 
-void Oval(string name, int number, Vec3 center, int radiusX, int radiusY);
-void OvalHollow(string name, int number, Vec3 center, int radiusX, int radiusY);
+void Line(Vec3 start, Vec3 end, string name, int number);
+void Rectangle(Vec3 topLeft, int width, int height, string name, int number);
+void Circle(Vec3 center, int radius, string name, int number);
+void CircleHollow(Vec3 center, int radius, string name, int number);
+void Oval(Vec3 center, int radiusX, int radiusY, string name, int number);
+void OvalHollow(Vec3 center, int radiusX, int radiusY, string name, int number);
 
-void sprayRectangle(string name, int number, int spawns, Vec3 center, Vec3 scale);
-void sprayOval(string name, int number, int spawns, Vec3 center, Vec3 scale);
-void spray(string name, int number, int spawns, Vec3 center, int range);
-void sprayLine(string name, int number, int spawns, Vec3 start, Vec3 end);
+void sprayRectangle(int spawns, Vec3 center, Vec3 scale, string name, int number);
+void sprayOval(int spawns, Vec3 center, Vec3 scale, string name, int number);
+void spray(int spawns, Vec3 center, int range, string name, int number);
+void sprayLine(int spawns, Vec3 start, Vec3 end, string name, int number);
 ```
 Use these functions (Not in class `Drawing`) to place the same object in a certain shape.
+### Structure
 
 ### General Functions
-These are some useful functions that could be used frequently in game development.
+These are some useful functions that could be used frequently in game development. <br>
+```cpp
+void kill(variant<int, vector<int>> objIDs);
+void revive(variant<int, vector<int>> objIDs);
+
+void destroy(variant<int, vector<int>> objIDs);
+```
+The `kill` Function removes the object from the workspace and `revive` function brings it back. <br>
+To delete the object completely, use the `destroy` function. <br>
+<br>
+```cpp
+mesh * GetObject(int objID);
+mesh GetMeshOf(int objID);
+int PlaceMesh(mesh m, Vec3 pos);
+```
+`GetObject` function Returns a pointer to the mesh of a specific object.
+`GetMeshOf` function Returns the mesh of a specific object.
+`PlaceMesh` function Places a mesh at a specified location.
+<br>
+
+```cpp
+void hold ();
+void wait (float time);
+```
+`hold` function waits forever, preventing the program to end. <br>
+`wait` function waits for a certain amount of time (milliseconds) <br>
+
+```
+bool isAlive(int obj);
+vector < int > all();
+vector < int > seek(string objectName);
+vector < int > findObjects(string name, variant < vector < int > , int > number);
+```
+`isAlive` function checks if a object exists. <br>
+`seek` function takes an object name as input and returns a vector of integers. Each integer in the vector represents the number property of objects in the workspace that have the specified name. <br>
+`all` function returns all object IDs that exists in the current workspace <br>
+
+`findObject` function takes two inputs:
+
+A name (string) of an object.
+A vector of numbers (or a single number).
+It returns a vector of object IDs (int). These IDs correspond to objects in the workspace that match both the specified name and any of the specified numbers. 
 
 ### Object Movement
 
@@ -223,16 +267,15 @@ void moveObjectX(const variant < int, vector < int >> objectID, int x_offset);
 void moveObjectY(const variant < int, vector < int >> objectID, int y_offset);
 void moveObjectPosition(const variant < int, vector < int >> objectID, Vec3 pos);
 
-
-void setObjectRandom(const variant < int, vector < int >> objectID,
-const pair < int, int > & xRange,
-const pair < int, int > & yRange);
-
 void setObjectXY(const variant < int, vector < int >> objectID, Vec3 pos);
 void setObjectX(const variant < int, vector < int >> objectID, Vec3 pos);
 void setObjectY(const variant < int, vector < int >> objectID, Vec3 pos);
 void setObjectPosition(const variant < int, vector < int >> objectID, Vec3 pos);
 void setObjectPositionToSprite(const variant < int, vector < int >> objectIDs, int spriteID);
+
+void setObjectRandom(const variant < int, vector < int >> objectID,
+const pair < int, int > & xRange,
+const pair < int, int > & yRange);
 
 void glideObjectPositionToSprite(const variant < int, vector < int >> objectIDs, int spriteID, float speed);
 void glideObjectX(const variant < int, vector < int >> & ids, int x_offset, float speed, ...);
