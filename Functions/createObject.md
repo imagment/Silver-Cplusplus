@@ -33,7 +33,7 @@ void Silver::createObject(const string name,
 ## Description
 This function is used to create a prefabrication of an object. This requires the name of an object and how it will look on the camera.
 
-# Similar Functions
+## Similar Functions
 ```cpp
 void Silver::createEmptyObject(const string name)
 ```
