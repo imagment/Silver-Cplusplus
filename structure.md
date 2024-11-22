@@ -13,7 +13,7 @@
   - [Sprites](#sprites)
 
 ## Design
-The workspace is the game's object map. All objects added using the put or place functions are stored in this map. <br>
+The workspace is the game's object map. All objects added using the put or place functions are stored in this map. 
 The entry `workspace[k]` refers to the mesh in the workspace with the object ID k. <br>
 because the workspace is a map, you can do a variety of operations. <br> 
 
@@ -27,15 +27,12 @@ workspace.erase(player); // Removes an object with ID 'player' from the workspac
 
 
 ## Prefabrications
-The prefabrication gets created when an object is created with the `createObject` function. <br>
-Prefabrication can be on the `workspace` through functions like `place` or `put` <br>
+The prefabrication gets created when an object is created with the `createObject` function. Prefabrication can be on the `workspace` through functions like `place` or `put` <br>
 Prefabrications are saved in the `prefabs` map. Their key is the name of the object. 
 
 ## Killed Workspace
-Besides removing the object with the `destroy` function, there is another way to destroy an object. <br>
-And that is the `kill` function. Unlike `destroy`, objects destroyed with `kill` can "revive". <br>
-This means objects that are destroyed with the `kill` functions are temporarily removed from the `workspace` <br>
-but can always return to the `workspace`. For example,
+Besides removing the object with the `destroy` function, there is another way to destroy an object. And that is the `kill` function. Unlike `destroy`, objects destroyed with `kill` can "revive". <br>
+This means objects that are destroyed with the `kill` functions are temporarily removed from the `workspace` but can always return to the `workspace`. For example,
 
 ```cpp
 int player = silver.put("player", Vec3(2,4,8));
@@ -43,8 +40,7 @@ silver.kill(player);
 silver.wait(1000); // Delay for 1 second to observe the change
 silver.revive(player);
 ```
-This code removes the player from the workspace and brings it back after 1 second. <br>
-During this second, the object is saved on a map called `killedSprites`. <br>
+This code removes the player from the workspace and brings it back after 1 second. During this second, the object is saved on a map called `killedSprites`. <br>
 like `workspace`, their key is the id of the object.
 
 ## Sprites
@@ -82,8 +78,6 @@ public:
 `mesh();` is a default constructer of mesh. <br>
 <br>
 <br>
-You can use `workspace[objID]` to access the meshes on the workspace <br>
-or use `getMeshValue` function from the silver class. <br>
-Or instead of using functions like `createObject` and `place` to place objects <br>
-in the workspace, you can build the structures of the mesh and place it directly <br>
+You can use `workspace[objID]` to access the meshes on the workspace or use `getMeshValue` function from the silver class. <br>
+Or instead of using functions like `createObject` and `place` to place objects in the workspace, you can build the structures of the mesh and place it directly <br>
 by accessing the workspace. 
