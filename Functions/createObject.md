@@ -3,13 +3,13 @@
 ## Function prototype
 
 ```cpp
-void createObject(const string name, const string shape);
+void createPrefab(const string name, const string shape);
 ```
 
 ## Implementation
 
 ```cpp
-void Silver::createObject(const string name,
+void Silver::createPrefab(const string name,
   const string shape) {
 
   if (!isValidName(name)) {
