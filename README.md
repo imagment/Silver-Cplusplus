@@ -110,7 +110,7 @@ silver.camera.stopVideo();
 ```
 
 ### Advanced Camera Functions & Cells
-Null Object Replacement (🧱)**: Displayed when a cell has no objects.
+Null Object Replacement (🟫): Displayed when a cell has no objects.
 
 You can configure these using:
 ```cpp
