@@ -1,0 +1,17 @@
+Hi There!
+
+Thank you for considering contributing to modding our C++ library, Silver C++.
+
+We truly appreciate your efforts in improving the library. Your contributions not only
+enhance its functionality but also make it more efficient and user-friendly.
+
+As you know, this project has immense growth potential,
+and your input is invaluable in taking it to the next level. 
+Feel free to share your ideas, report issues, or submit pull requests.
+Together, we can make Silver C++ an even better start for creating outstanding text-based games.
+
+Please feel free to read our documentations or share your idea in our community. 
+And please leave credits if you want to share your modifications. But feel free to
+use our work for commercial purposes. (Read more in our license. But seriously, credits please!)
+
+We will wait for you to fork our project. Good Luck! 🚀
