@@ -13,7 +13,7 @@ void Silver::createObject(const string name,
   const string shape) {
 
   if (!isValidName(name)) {
-    silver.debug("From \"void Silver::createObject(const string& name, const string& shape)\" : Invalid object name containing unprintable characters ", "e");
+    silver.debug("From \"void Silver::createObject(const string& name, const string& shape)\"\nInvalid object name containing unprintable characters ", "e");
     return;
   }
 
