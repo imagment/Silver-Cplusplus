@@ -10,12 +10,13 @@
   - [Workspace](#workspace)
   - [Prefabrication](#prefabrications)
   - [Killed Workspace](#killed-workspace)
-  - [Sprites](#sprites)
+  - [Structure Of Sprites](#structure-of-sprites)
+  - [Structure Of Prefabrications](#structure-of-prefabs)
 
 ## Design
 The workspace is the game's object map. All objects added using the put or place functions are stored in this map. 
 The entry `workspace[k]` refers to the mesh in the workspace with the object ID k. <br>
-because the workspace is a map, you can do a variety of operations. <br> 
+Because the workspace is a map, you can perform various operations. <br> 
 
 For example, 
 ```cpp
@@ -40,11 +41,11 @@ silver.kill(player);
 silver.wait(1000); // Delay for 1 second to observe the change
 silver.revive(player);
 ```
-This code removes the player from the workspace and brings it back after 1 second. During this second, the object is saved on a map called `killedSprites`. <br>
+This code removes the player from the workspace and returns it after 1 second. During this second, the object is saved on a map called `killedSprites`. <br>
 like `workspace`, their key is the id of the object.
 
-## Sprites
-All Sprites have a class called 'mesh'. Here is a structure of mesh.
+## Structure Of Sprites
+All Sprites placed in the workspace have a class called 'mesh'. Here is a structure of mesh.
 ```cpp
 class mesh {
 public:
@@ -81,3 +82,32 @@ public:
 You can use `workspace[objID]` to access the meshes on the workspace or use `getMeshValue` function from the silver class. <br>
 Or instead of using functions like `createObject` and `place` to place objects in the workspace, you can build the structures of the mesh and place it directly <br>
 by accessing the workspace. 
+
+## Structure Of Prefabrications
+All sprites created by functions like `createObject` has a class called `prefab`. Here is an implementation of it.
+```
+class prefab {
+public:
+    std::string name;
+    std::string shape;
+    std::map<std::string, int> intValues;
+    std::map<std::string, std::string> stringValues;
+    std::vector<std::string> tags;
+    int transparency;
+    components Components;
+
+    prefab(const std::string& n = "", const std::string& shp = "", int transp = 0);
+    prefab(const mesh& msh); 
+};
+```
+`name` indicates the name of the object. <br>
+`shape` indicates the shape of the object. <br>
+`intValues` is a map that saves an object's associated int values. <br>
+`stringValues` is a map that saves an object's associated string values. <br>
+`tags` is a map that saves an object's tags. <br>
+`transparency` is an integer that saves an object's transparency. <br>
+`prefab(const std::string& n = "", const std::string& shp = "", int transp = 0)` is the default constructor of a prefab <br>
+<br>
+Unlike meshes, prefabs do not have numbers or positions. <br>
+Also, note that prefabs are compatible with mesh. <br>
+
