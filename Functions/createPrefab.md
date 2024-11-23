@@ -1,4 +1,4 @@
-# Function name : createObject
+# Function name : createPrefab
 
 ## Function prototype
 
