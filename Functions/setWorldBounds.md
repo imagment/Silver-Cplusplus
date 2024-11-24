@@ -16,10 +16,10 @@ void Silver::setWorldBounds(Vec2 world) {
 ```
 
 ## Description
-This function is used to set the bounds of the world. If the out_of_bounds option is enabled in the camera, areas outside the defined world bounds will be displayed differently.
-Additionally, if you plan to use only a specific part of the world, it is recommended to define it clearly for better usability.
+This function sets the world's bounds. If the out_of_bounds option is enabled in the camera, areas outside the defined world bounds will be displayed differently.
+Additionally, if you plan to use only a specific part of the world, it is recommended that you define it clearly for better usability.
 
 ## Example Usage
 ```cpp
-silver.createObject("player","😊");
+silver.setWorldBounds(Vec2(100,100));
 ```
