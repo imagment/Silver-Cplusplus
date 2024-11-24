@@ -37,7 +37,7 @@ vector < int > Silver::findObjects(string name, variant < vector < int > , int >
 ```
 
 ## Description
-This function is used to find an object ID with a certain name and a certain number. <br>
+This function is used to find IDs of objects with a certain name and a certain number. <br>
 If the number is all_numbers, it returns all objects with that name regardless of the number. <br>
 
 ## Example Usage
