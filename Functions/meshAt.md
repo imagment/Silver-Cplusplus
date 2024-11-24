@@ -32,11 +32,11 @@ vector < mesh > Silver::MeshAt3(Vec3 pos) {
 ```
 
 ## Description
-This function is used to find a mesh in a certain location. The parameters are Vec2 and Vec3. <br>
+This function is used to find a mesh in a certain location. The parameters are Vec2 and Vec3. 
 They both return a vector of mesh that is in that location.
 
 ## Time complexity
-Both function has a time complexity of O(N). Where N is the number of all objects.
+Both functions have a time complexity of O(N), where N is the number of objects.
 
 ## Example Usage
 ```
