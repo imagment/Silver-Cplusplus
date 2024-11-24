@@ -24,9 +24,6 @@ vector < int > Silver::all() {
 ## Description
 This function returns a vector that contains all IDs of each object.
 
-## Time complexity
-This function has a time complexity of O(N). Where N is the number of objects in the workspace.
-
 ## Example Usage
 ```cpp
 vector<int> all = silver.all();
