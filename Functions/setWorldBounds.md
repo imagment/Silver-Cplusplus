@@ -3,15 +3,15 @@
 ## Function prototype
 
 ```cpp
-void Silver::setWorldBounds(Vec2 world);
+void Silver::setWorldBounds(Vec2 start, Vec2 end);
 ```
 
 ## Implementation
 
 ```cpp
-void Silver::setWorldBounds(Vec2 world) {
-  WorldX = world.x;
-  WorldY = world.y;
+void Silver::setWorldBounds(Vec2 start, Vec2 end) {
+  WorldRange1 = start;
+  WorldRange2 = end;
 }
 ```
 
