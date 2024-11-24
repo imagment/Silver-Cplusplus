@@ -28,7 +28,6 @@
 #define immediate - 1
 
 
-#define pointer "OBJECT_POINTER"
 #define World map < int, mesh >
   #define infinity - 1
 #define ui_c 1048576
@@ -203,82 +202,45 @@ struct components {
 
 };
 
-struct sprite {
-  Vec3 position;
-  std::string name;
-  int number;
 
-  std::map < std::string, int > intValues;
-  std::map < std::string, std::string > stringValues;
-
-  std::vector < std::string > tags;
-
-  sprite(const Vec3 & pos = Vec3(0, 0, 0),
-    const std::string & n = "",
-      int num = 0): position(pos), name(n), number(num) {}
-};
+class mesh; // Forward declaration of mesh
 
 class prefab {
-  public: std::string name;
-  std::string shape;
-  std::vector < std::string > tags;
-  int transparency;
-  components Components;
+public:
+    std::string name;
+    std::string shape;
+    std::map<std::string, int> intValues;
+    std::map<std::string, std::string> stringValues;
+    std::vector<std::string> tags;
+    int transparency;
+    components comp;
 
-  prefab(const std::string & n = "",
-    const std::string & shp = "",
-      int transp = 0): name(n),
-  shape(shp),
-  transparency(transp) {}
+    prefab(const std::string& n = "", const std::string& shp = "", int transp = 0);
+    prefab(const mesh& msh); 
 };
 
 class mesh {
-  public: sprite object;
-  std::string scripts;
-  std::string shape;
-  int transparency;
-  components Components;
+public:
+    Vec3 position;
+    std::string name;
+    std::string shape;
+    int number;
+    std::map<std::string, int> intValues;
+    std::map<std::string, std::string> stringValues;
+    std::vector<std::string> tags;
+    int transparency;
+    components comp;
 
-  mesh(): object(),
-  transparency(0) {}
-
-  mesh(const sprite & obj,
-    const std::string & scr,
-      const std::string & shp): object(obj),
-  scripts(scr),
-  shape(shp),
-  transparency(0) {}
-
-  mesh(const prefab & pfb): object(sprite(Vec3(0, 0, 0), pfb.name)),
-  shape(pfb.shape),
-  transparency(pfb.transparency),
-  Components(pfb.Components) {}
-
-  void setTransparency(int value) {
-    transparency = (value == 0 || value == 1) ? value : transparency;
-  }
-
-  void translate2(Vec3 offset) {
-    object.position.x += offset.x;
-    object.position.y += offset.y;
-  }
-
-  void translate3(Vec3 offset) {
-    object.position += offset;
-  }
-
-  Vec3 getPos2() const {
-    return {
-      object.position.x,
-      object.position.y,
-      0
-    };
-  }
-
-  Vec3 getPos3() const {
-    return object.position;
-  }
+    mesh();                    
+    mesh(const prefab& pfb);     
+    void setTransparency(int value);
+    void translate2(Vec3 offset);
+    void translate3(Vec3 offset);
+    Vec3 getPos2() const;
+    Vec3 getPos3() const;
 };
+
+
 
 struct zone {
   public: variant < tuple < int,
@@ -295,7 +257,12 @@ struct zone {
 
 class Silver {
 
-  public: bool isInZone(const zone & z, Vec3 pos);
+  public:
+  
+
+
+Vec2 WorldRangeStart={-25,-25}, WorldRangeEnd={25,25};
+  bool isInZone(const zone & z, Vec3 pos);
   class UI {
 
     void changeToUI(variant < vector < int > , int > workspaceIDs);
@@ -342,7 +309,7 @@ class Silver {
     void spray(int spawns, Vec3 center, int range, string c);
     void sprayLine(int spawns, Vec3 start, Vec3 end, string c);
   };
-  mesh * GetObject(int objID);
+  mesh * getMesh(int objID);
   zone buildZone(variant < tuple < int, int, int, int > , vector < tuple < int, int, int, int >>> shape);
   void setObjectPosition(const variant < int, vector < int >> objectID, Vec3 pos);
   void glideObjectPositionToSprite(const variant < int, vector < int >> objectIDs, int spriteID, float speed);
@@ -353,9 +320,9 @@ class Silver {
   bool isAlive(int obj);
   void sprayLine(int spawns, Vec3 start, Vec3 end, string name, int number);
   int place(string objectName, int number, Vec3 pos);
-  void sprayLine(string name, int number, int spawns, Vec3 start, Vec3 end);
 
-  void createObject(const string name, const string shape);
+
+  void createPrefab(const string name, const string shape);
 
   void moveObjectXY(const variant < int, vector < int >> objectID, Vec3 pos);
   void moveObjectX(const variant < int, vector < int >> objectID, int x_offset);
@@ -377,10 +344,8 @@ class Silver {
   void Oval(string name, int number, Vec3 center, Vec3 scale);
   int getRandom(int min, int max);
   void OvalHollow(string name, int number, Vec3 center, Vec3 scale);
-  void setObjectX(const string & name,
-    const variant < int, vector < int >> & number, int x);
-  void setObjectY(const string & name,
-    const variant < int, vector < int >> & number, int y);
+  void setObjectX(const variant < int, vector < int >> objectID, Vec3 pos);
+  void setObjectY(const variant < int, vector < int >> objectID, Vec3 pos);
   void setObjectXY(const variant < int, vector < int >> objectID, Vec3 pos);
 
   void glideObjectRandom(const variant < int, vector < int >> & ids,
@@ -402,7 +367,7 @@ class Silver {
   void glideObjectX(const variant < int, vector < int >> & ids, int x_offset, float speed, ...);
   void glideObjectY(const variant < int, vector < int >> & ids, int y_offset, float speed, ...);
 
-  void setWorldBounds(Vec3 world);
+  void setWorldBounds(Vec2 start, Vec2 end);
   vector < int > seekTag(const string & tag);
   void applyTag(const vector < int > & ids,
     const string & tag);
@@ -426,11 +391,15 @@ class Silver {
   void setConsoleTitle(const std::string & title);
   class Camera {
     public:
-    vector<string> topText = {"Hi there, you're new to here"};
+      string null_rep = "🟫";
+    vector<string> topText = {};
     vector<string> rightText = {};
     vector<string> leftText = {};
-    vector<string> bottomText = {"Welcome to Silver C++! This is a template for Silver C++ Version -16. (A.K.A. Version Torch)"};
+    vector<string> bottomText = {};
     bool sideLimit=false;
+    bool topDownLimit=true;
+    bool printSpaces=true;
+    bool absoluteAlign=true;
     int topAlign = 1,
     bottomAlign = 0,
     leftAlign = 0,
@@ -491,17 +460,16 @@ class Silver {
     vector < vector < string >> gPhoto();
   };
 
-  void kill(int objID);
-  void revive(int objID);
+  void kill(variant<int, vector<int>> objIDs);
+  void revive(variant<int, vector<int>> objIDs);
 
-  void destroy(int objID);
+  void destroy(variant<int, vector<int>> objIDs);
 
   void gotoxy(int x, int y);
   int put(string objectName, Vec3 pos);
   int unoccupied(string objectName);
   void createEmptyObject(const string name);
-  vector < int > seek(string objectName);
-
+ 
   vector < int > spriteAt3(Vec3 pos);
   vector < int > spriteAt2(Vec2 pos);
 
@@ -597,9 +565,8 @@ class Silver {
   void loadChunk(const string & file);
   void wait(float time);
 
-  vector < mesh > MeshAt3(Vec3 pos);
-  vector < mesh > MeshAt2(Vec3 pos);
-  mesh GetMeshOf(int objID);
+
+  mesh getMeshValue(int objID);
 
   Vec3 getLocation(int id);
   vector < int > getLocationAxis(const variant < int, vector < int >> objectID, char axis);
@@ -607,7 +574,7 @@ class Silver {
   vector < int > getLocationY(const variant < int, vector < int >> objectID);
   vector < int > getLocationZ(const variant < int, vector < int >> objectID);
 
-  int PlaceMesh(mesh m, Vec3 pos);
+ 
   void hold();
   vector < int > all();
   vector < int > findObjects(string name, variant < vector < int > , int > number);
