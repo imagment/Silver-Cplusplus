@@ -35,9 +35,6 @@ vector < mesh > Silver::MeshAt3(Vec3 pos) {
 This function is used to find a mesh in a certain location. The parameters are Vec2 and Vec3. 
 They both return a vector of mesh that is in that location.
 
-## Time complexity
-Both functions have a time complexity of O(N), where N is the number of objects.
-
 ## Example Usage
 ```
 int k = silver.place("player", 0, Vec3(10,10,0));
