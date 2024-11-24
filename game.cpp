@@ -1458,31 +1458,8 @@ void startLoading() {
 }
 // Implementations
 
-// prefab implementations
-prefab::prefab(const std::string& n, const std::string& shp, int transp)
-    : name(n), shape(shp), transparency(transp) {}
 
-prefab::prefab(const mesh& msh)
-    : name(msh.name),
-      shape(msh.shape),
-      intValues(msh.intValues),
-      stringValues(msh.stringValues),
-      tags(msh.tags),
-      transparency(msh.transparency),
-      comp(msh.comp) {}
 
-// mesh implementations
-mesh::mesh() : position(0, 0, 0), transparency(0) {}
-
-mesh::mesh(const prefab& pfb)
-    : position(0, 0, 0),
-      name(pfb.name),
-      shape(pfb.shape),
-      intValues(pfb.intValues),
-      stringValues(pfb.stringValues),
-      tags(pfb.tags),
-      transparency(pfb.transparency),
-      comp(pfb.comp) {}
 
 void mesh::setTransparency(int value) {
     transparency = (value == 0 || value == 1) ? value : transparency;
@@ -1497,11 +1474,11 @@ void mesh::translate3(Vec3 offset) {
     position += offset;
 }
 
-Vec3 mesh::getPos2() const {
+Vec3 mesh::getPos2()  {
     return {position.x, position.y, 0};
 }
 
-Vec3 mesh::getPos3() const {
+Vec3 mesh::getPos3()  {
     return position;
 }
 

@@ -1,7 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
-
-#include <bits/stdc++.h>
+#include <variant>
 
 #include <map>
 
@@ -15,22 +14,28 @@
 
 #include <memory>
 
+#include <thread>
+
+#include <functional>
+
 #include <locale>
 
 #include <numeric>
 
 #include <unordered_map>
+#include <queue>
+
+#include <random>
 
 #define MAX_TOKEN_SIZE 1000
 
-#define all_numbers - 1
-#define origin - 2
-#define immediate - 1
-
+inline constexpr int all_numbers = -1;
+inline constexpr int immediate = -1;
+inline constexpr int infinity = -1;
+inline constexpr int ui_c = 1048576;
 
 #define World map < int, mesh >
-  #define infinity - 1
-#define ui_c 1048576
+
 
 using namespace std;
 
@@ -39,9 +44,7 @@ class Vec3 {
   y,
   z;
 
-  Vec3(int _x, int _y, int _z): x(_x),
-  y(_y),
-  z(_z) {}
+
 
   Vec3 operator + (const Vec3 & other) const {
     return Vec3(x + other.x, y + other.y, z + other.z);
@@ -116,15 +119,18 @@ class Vec3 {
   const Vec3 zero() {
     return Vec3(0, 0, 0);
   }
+constexpr Vec3(int x_, int y_, int z_) : x(x_), y(y_), z(z_) {}
+constexpr Vec3() : x(0), y(0), z(0) {}
+ 
 };
 
-#define markAsUI Vec3(1048576, 1048576, 0)
+inline constexpr Vec3 markAsUI{1048576, 1048576, 0};
 
 class Vec2 {
   public: int x,
   y;
 
-  Vec2(int _x, int _y): x(_x),
+  constexpr Vec2(int _x, int _y): x(_x),
   y(_y) {}
 
   operator Vec3() const {
@@ -203,8 +209,7 @@ struct components {
 };
 
 
-class mesh; // Forward declaration of mesh
-
+class mesh; 
 class prefab {
 public:
     std::string name;
@@ -215,8 +220,10 @@ public:
     int transparency;
     components comp;
 
-    prefab(const std::string& n = "", const std::string& shp = "", int transp = 0);
-    prefab(const mesh& msh); 
+    prefab(const std::string& n = "", const std::string& shp = "", int transp = 0)
+        : name(n), shape(shp), transparency(transp) {}
+
+    prefab(const mesh& msh);
 };
 
 class mesh {
@@ -231,13 +238,18 @@ public:
     int transparency;
     components comp;
 
-    mesh();                    
-    mesh(const prefab& pfb);     
+    mesh() : position(), number(0), transparency(0) {}
+
+    mesh(const prefab& pfb)
+        : position(), name(pfb.name), shape(pfb.shape), number(0), 
+          intValues(pfb.intValues), stringValues(pfb.stringValues), 
+          tags(pfb.tags), transparency(pfb.transparency), comp(pfb.comp) {}
+    
     void setTransparency(int value);
     void translate2(Vec3 offset);
     void translate3(Vec3 offset);
-    Vec3 getPos2() const;
-    Vec3 getPos3() const;
+    Vec3 getPos2();
+    Vec3 getPos3();
 };
 
 
