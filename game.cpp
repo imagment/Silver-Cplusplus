@@ -72,12 +72,7 @@ World empty;
 map <
   const string, prefab > prefabrications;
 
-
-
 Silver silver;
-
-
-
 
 mesh * Silver::getMesh(int objID) {
 
@@ -107,7 +102,6 @@ void Silver::setWorldBounds(Vec2 start, Vec2 end) {
   WorldRangeEnd = end;
 }
 
-
 vector < int > Silver::findObjects(string name, variant < vector < int > , int > number) {
   vector < int > numbers;
 
@@ -133,8 +127,6 @@ vector < int > Silver::findObjects(string name, variant < vector < int > , int >
 
   return numbers;
 }
-
-
 
 void Silver::destroy(variant<int, vector<int>> objIDs) {
     vector<int> keysToRemove;
@@ -201,7 +193,6 @@ void Silver::revive(variant<int, vector<int>> objIDs) {
     }
 }
 
-
 void Silver::Scene::saveWorldAs(std::string name) {
   scenes[name] = workspace;
 
@@ -235,7 +226,6 @@ Vec2 Silver::Camera::getScreenPosition(Vec3 pos) {
   int rotatedX = round(cosTheta * dx + sinTheta * dy);
   int rotatedY = round(-sinTheta * dx + cosTheta * dy);
 
-  // Flip based on camera
   if (silver.camera.isFlippedHorizonal == -1) {
     rotatedX = silver.camera.CameraScale.x - rotatedX - 1;
   }
@@ -251,7 +241,6 @@ Vec2 Silver::Camera::getScreenPosition(Vec3 pos) {
     screenY
   };
 }
-
 
 void Silver::Camera::flipCamera(int X, int Y) {
   if (X == 1 || X == -1) {
@@ -442,7 +431,6 @@ void Silver::Camera::printCam() {
       dz >= -silver.camera.CameraScale.z / 2 && dz <= silver.camera.CameraScale.z / 2) {
       bool isTransparent = obj.transparency == 1;
 
-        // Consider spaces and tabs as transparent if printSpaces is false
         if (!printSpaces) {
             isTransparent = isTransparent || (obj.shape.find(' ') != std::string::npos || obj.shape.find('\t') != std::string::npos);
         }
@@ -658,7 +646,6 @@ void Silver::Camera::printCam() {
 
     int currentY = offsetY + j + topTextLinesCount;
     if (currentY >= 0) {
-
 
       silver.gotoxy(offsetX, currentY);
       cout << line << flush;
@@ -1456,10 +1443,6 @@ void startLoading() {
   silver.gotoxy(0, 1);
   cout << "#" << flush;
 }
-// Implementations
-
-
-
 
 void mesh::setTransparency(int value) {
     transparency = (value == 0 || value == 1) ? value : transparency;
@@ -1524,21 +1507,19 @@ int Silver::place(string objectName, int number, Vec3 position) {
 
   auto entry = prefabrications.find(objectName);
   if (entry != prefabrications.end()) {
-    // Directly use the prefab data for mesh
+
     mesh X=entry->second;
     X.position = position;
     X.number = number;
-    
-    // Increment sprite count
+
     silver.sprites_count++;
 
-    // Find an empty ID in the workspace (start after the current sprite count)
     int missingID = -1;
     if(silver.sprites_count != std::numeric_limits<int>::max()) {
         missingID = silver.sprites_count++;
     } else {
         for (int id = 0; id < std::numeric_limits<int>::max(); ++id) {
-          // Check if the ID is available
+
           if (workspace.find(id) == workspace.end()) {
             missingID = id;
             break;
@@ -1551,14 +1532,13 @@ int Silver::place(string objectName, int number, Vec3 position) {
       return -1;
     }
 
-    // Insert the UI element at the found ID
     workspace.insert({
       missingID,
       X
     });
     return missingID;
   }
-  
+
   return -1;
 }
 
@@ -1577,16 +1557,14 @@ int Silver::UI::place(string objectName, int number, Vec3 position) {
     X.number = number;
     X.comp.isUI=true;
 
-    // Increment sprite count
     silver.sprites_count++;
 
-    // Find an empty ID in the workspace (start after the current sprite count)
     int missingID = -1;
     if(silver.sprites_count!=std::numeric_limits<int>::max()) {
         missingID = silver.sprites_count++;
     } else {
 	    for (int id = 0; id < std::numeric_limits<int>::max(); ++id) {
-	      // Check if the ID is available
+
 	      if (workspace.find(id) == workspace.end()) {
 		missingID = id;
 		break;
@@ -1599,14 +1577,13 @@ int Silver::UI::place(string objectName, int number, Vec3 position) {
       return -1;
     }
 
-    // Insert the UI element at the found ID
     workspace.insert({
       missingID,
       X
     });
     return missingID;
   }
-  
+
   return -1;
 }
 
@@ -1862,13 +1839,13 @@ void Silver::setObjectPositionToSprite(const variant < int, vector < int >> obje
     int singleID = get < int > (objectIDs);
 
       idsToUpdate.push_back(singleID);
-    
+
   } else {
     const vector < int > & idList = get < vector < int >> (objectIDs);
     for (int id: idList) {
-   
+
         idsToUpdate.push_back(id);
-      
+
     }
   }
 
@@ -1881,13 +1858,12 @@ void Silver::setObjectPositionToSprite(const variant < int, vector < int >> obje
   }
 }
 void Silver::glideObjectPositionToSprite(const std::variant<int, std::vector<int>> objectIDs, int spriteID, float speed) {
-    // Get target position
+
     Vec3 targetPos = silver.getMeshValue(spriteID).position;
 
-    int maxSteps = 0; // Store maximum steps required for the glide
-    std::vector<std::tuple<int, int, int>> idsToUpdate; // Store IDs with their x and y steps
+    int maxSteps = 0; 
+    std::vector<std::tuple<int, int, int>> idsToUpdate; 
 
-    // Process single ID or list of IDs
     if (std::holds_alternative<int>(objectIDs)) {
         int singleID = std::get<int>(objectIDs);
 
@@ -1910,28 +1886,23 @@ void Silver::glideObjectPositionToSprite(const std::variant<int, std::vector<int
         }
     }
 
-    // If maxSteps is zero, no movement is needed
     if (maxSteps == 0) {
         return;
     }
 
-    // Calculate duration for each step
     float stepDuration = speed / maxSteps;
 
-    // Glide each object to the target position step by step
     for (int i = 0; i < maxSteps; ++i) {
         silver.wait(stepDuration);
 
         for (const auto& [id, x_steps, y_steps] : idsToUpdate) {
             Vec3 currentPos = silver.getMeshValue(id).position;
 
-            // Move in X direction if required
             if (i < x_steps && (i % (maxSteps / std::max(1, x_steps)) == 0)) {
                 int dirX = (targetPos.x > currentPos.x) ? 1 : -1;
                 silver.moveObjectX(id, dirX);
             }
 
-            // Move in Y direction if required
             if (i < y_steps && (i % (maxSteps / std::max(1, y_steps)) == 0)) {
                 int dirY = (targetPos.y > currentPos.y) ? 1 : -1;
                 silver.moveObjectY(id, dirY);
@@ -1962,7 +1933,7 @@ void Silver::glideObjectXY(const variant < int, vector < int >> & ids,
 
   if (holds_alternative < int > (ids)) {
     int singleId = get < int > (ids);
-   
+
     Vec3 current_pos = silver.getMeshValue(singleId).position;
 
     int targetX = addOffset ? current_pos.x + offset.x : offset.x;
@@ -1981,7 +1952,6 @@ void Silver::glideObjectXY(const variant < int, vector < int >> & ids,
   } else {
     const vector < int > & idList = get < vector < int >> (ids);
     for (const auto & id: idList) {
-
 
       Vec3 current_pos = silver.getMeshValue(id).position;
 
@@ -2267,7 +2237,7 @@ void Silver::glideObjectX(const variant < int, vector < int >> & ids, int x_offs
   } else {
     const vector < int > & idList = get < vector < int >> (ids);
     for (const auto & id: idList) {
-  
+
       Vec3 current_pos = silver.getMeshValue(id).position;
       int targetX = setPosition ? x_offset : current_pos.x + x_offset;
       int steps = abs(targetX - current_pos.x);
@@ -2303,7 +2273,6 @@ void Silver::glideObjectY(const variant < int, vector < int >> & ids, int y_offs
   if (holds_alternative < int > (ids)) {
     int singleId = get < int > (ids);
 
-
     Vec3 current_pos = silver.getMeshValue(singleId).position;
     int targetY = setPosition ? y_offset : current_pos.y + y_offset;
     int steps = abs(targetY - current_pos.y);
@@ -2313,7 +2282,6 @@ void Silver::glideObjectY(const variant < int, vector < int >> & ids, int y_offs
   } else {
     const vector < int > & idList = get < vector < int >> (ids);
     for (const auto & id: idList) {
-    
 
       Vec3 current_pos = silver.getMeshValue(id).position;
       int targetY = setPosition ? y_offset : current_pos.y + y_offset;
@@ -2470,7 +2438,6 @@ void Silver::glideObjectRandom(const variant < int, vector < int >> & ids,
 
   if (holds_alternative < int > (ids)) {
     int singleId = get < int > (ids);
-   
 
     Vec3 current_pos = silver.getMeshValue(singleId).position;
     int targetX = getRandom(xRange.first, xRange.second);
@@ -2492,7 +2459,6 @@ void Silver::glideObjectRandom(const variant < int, vector < int >> & ids,
   } else {
     const vector < int > & idList = get < vector < int >> (ids);
     for (const auto & id: idList) {
-      
 
       Vec3 current_pos = silver.getMeshValue(id).position;
       int targetX = getRandom(xRange.first, xRange.second);
@@ -2534,7 +2500,6 @@ void Silver::glideObjectRandom(const variant < int, vector < int >> & ids,
     }
   }
 }
-
 
 struct termios orig_termios;
 
