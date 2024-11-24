@@ -10,8 +10,8 @@ void Silver::setWorldBounds(Vec2 start, Vec2 end);
 
 ```cpp
 void Silver::setWorldBounds(Vec2 start, Vec2 end) {
-  WorldRange1 = start;
-  WorldRange2 = end;
+  WorldRangeStart = start;
+  WorldRangeEnd = end;
 }
 ```
 
