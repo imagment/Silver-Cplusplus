@@ -40,9 +40,6 @@ vector < int > Silver::findObjects(string name, variant < vector < int > , int >
 This function is used to find an object ID with a certain name and a certain number. <br>
 If the number is all_numbers, it returns all objects with that name regardless of the number. <br>
 
-## Time Complexity
-This function has a time complexity of O(N). Where N is the number of objects that exist in the workspace.
-
 ## Example Usage
 ```cpp
 silver.place("player",5,Vec3(10,10,0));
