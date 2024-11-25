@@ -213,7 +213,6 @@ void spray(int spawns, Vec3 center, int range, string name, int number);
 void sprayLine(int spawns, Vec3 start, Vec3 end, string name, int number);
 ```
 Use these functions (Not in class `Drawing`) to place the same object in a certain shape.
-### Structure
 
 ### General Functions
 These are some useful functions that could be used frequently in game development. <br>
@@ -229,7 +228,6 @@ To delete the object completely, use the `destroy` function. <br>
 ```cpp
 mesh * GetObject(int objID);
 mesh GetMeshOf(int objID);
-int PlaceMesh(mesh m, Vec3 pos);
 ```
 `GetObject` function Returns a pointer to the mesh of a specific object.
 `GetMeshOf` function Returns the mesh of a specific object.
