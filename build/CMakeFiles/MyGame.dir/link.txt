@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/MyGame.dir/src/main.cpp.o -o MyGame  libSilver.a

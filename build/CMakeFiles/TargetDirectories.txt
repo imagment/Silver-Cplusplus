@@ -1,0 +1,4 @@
+/home/imagment/Desktop/Silverside C++/build/CMakeFiles/Silver.dir
+/home/imagment/Desktop/Silverside C++/build/CMakeFiles/MyGame.dir
+/home/imagment/Desktop/Silverside C++/build/CMakeFiles/edit_cache.dir
+/home/imagment/Desktop/Silverside C++/build/CMakeFiles/rebuild_cache.dir
