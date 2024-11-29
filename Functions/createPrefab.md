@@ -3,7 +3,7 @@
 ## Function prototype
 
 ```cpp
-void createPrefab(const std::string name, const std::string shape);
+void Silver::createPrefab(const string name, const string shape);
 ```
 
 ## Implementation
