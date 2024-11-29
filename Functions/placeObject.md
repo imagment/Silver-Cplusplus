@@ -3,13 +3,13 @@
 ## Function prototype
 
 ```cpp
-int placeObject(std::string objectName, int number, Vec3 pos);
+int placeObject(const string objectName, int number, Vec3 position) 
 ```
 
 ## Implementation
 
 ```cpp
-int Silver::placeObject(string objectName, int number, Vec3 position) {
+int Silver::placeObject(const string objectName, int number, Vec3 position) {
   if (number < 0) {
     number = 0;
   }
