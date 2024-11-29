@@ -9,7 +9,7 @@ void setConsoleTitle(const std::string & title);
 ## Implementation
 
 ```cpp
-void Silver::setConsoleTitle(const std::string & title) {
+void Silver::setConsoleTitle(const string & title) {
   cout << "\033]0;" << title << "\007";
 }
 ```
