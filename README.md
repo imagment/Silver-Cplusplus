@@ -186,10 +186,11 @@ void createObject(const std::string name, const std::string shape);
 If you create an object, you can use one of these functions:
 
 ```cpp
-int place(string objectName, int number, Vec3 position); // Places an object in the world
-int put(string objectName, Vec3 position); // Places an object in the world with a unique number
+int placeObject(string objectName, int number, Vec3 position); // Places an object in the world
+int addObject(string objectName, Vec3 position); // Places an object in the world with a unique number
+int put(string objectName, Vec3 position); // Places an object in the world with number 0.
 
-int unoccupied(string objectName); // Returns a number that is not currently being used by any object with the same name (
+int unoccupiedNumber(string objectName); // Returns a number that is not currently being used by any object with the same name (
 ```
 When an object gets placed on the map, it requires a number. Also, some of the 2 objects might have the same number.
 ```cpp
@@ -197,7 +198,7 @@ silver.place("player", 1, Vec2(10, 10));
 silver.place("player", 1, Vec2(10, 11)); // This is allowed
 ```
 Objects are numbered for unique identification and manipulation within the world. So you can use the `void put(string objectName, Vec3 position);` function if the number doesn't matter much. <br>
-Also, placing functions like `place` and `put` returns an integer. That integer is used in doing most of the operations. 
+Also, placing related functions like `placeObject`, `addObject` and `put` returns an integer. That integer is used in doing most of the operations. 
 
 ```cpp
 void Line(Vec3 start, Vec3 end, string name, int number);
@@ -226,12 +227,11 @@ The `kill` Function removes the object from the workspace and `revive` function 
 To delete the object completely, use the `destroy` function. <br>
 <br>
 ```cpp
-mesh * GetObject(int objID);
-mesh GetMeshOf(int objID);
+mesh * getMesh(int objID);
+mesh getMeshValue(int objID);
 ```
-`GetObject` function Returns a pointer to the mesh of a specific object.
-`GetMeshOf` function Returns the mesh of a specific object.
-`PlaceMesh` function Places a mesh at a specified location.
+The `getMesh` function Returns a pointer to the mesh of a specific object.
+The `getMeshValue` function Returns the mesh of a specific object.
 <br>
 
 ```cpp
@@ -248,14 +248,12 @@ vector < int > seek(string objectName);
 vector < int > findObjects(string name, variant < vector < int > , int > number);
 ```
 `isAlive` function checks if a object exists. <br>
-`seek` function takes an object name as input and returns a vector of integers. Each integer in the vector represents the number property of objects in the workspace that have the specified name. <br>
 `all` function returns all object IDs that exists in the current workspace <br>
-
 `findObject` function takes two inputs:
 
 A name (string) of an object.
 A vector of numbers (or a single number).
-It returns a vector of object IDs (int). These IDs correspond to objects in the workspace that match both the specified name and any of the specified numbers. 
+It returns a vector of object IDs (int). These IDs correspond to objects in the workspace that match the specified name and any specified numbers. 
 
 ### Object Movement
 
