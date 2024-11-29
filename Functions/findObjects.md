@@ -3,7 +3,7 @@
 ## Function prototype
 
 ```cpp
-vector < int > findObjects(string name, variant < vector < int > , int > number);
+vector < int > findObjects(std::string name, variant < vector < int > , int > number);
 ```
 
 ## Implementation
