@@ -3,13 +3,13 @@
 ## Function prototype
 
 ```cpp
-vector < int > findObjects(std::string name, variant < vector < int > , int > number);
+vector < int > Silver::findObjects(const string name, variant < vector < int > , int > number);
 ```
 
 ## Implementation
 
 ```cpp
-vector < int > Silver::findObjects(string name, variant < vector < int > , int > number) {
+vector < int > Silver::findObjects(const string name, variant < vector < int > , int > number) {
   vector < int > numbers;
 
   for (auto & entry: workspace) {
