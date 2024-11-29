@@ -31,3 +31,9 @@ void Silver::Scene::resetScene() {
 `saveWorldAs`: Saves the workspace into the `scenes` map. <br>
 `changeSceneTo`: Get the workspace in the `scenes` map and set that map to the current workspace. <br>
 `resetScene`: Resets the current scene.
+
+## Other members
+```cpp
+std::map < std::string, World > scenes;
+```
+This is a map that contains saved scenes. It's key is the name of the scene and it returns a workspace.
