@@ -65,8 +65,8 @@ void setCam(Vec3 pos, Vec3 scale, int depth);
 
 Example usage:
 ```cpp
-silver.camera.setCam3(Vec3(int,int,int),Vec3(int,int,int)); 
-silver.camera.setCam2(Vec2(int,int),Vec2(int,int)); // Does not change Z pos and Z scale
+silver.camera.setCam3(Vec3(3,2,4),Vec3(6,6,8)); 
+silver.camera.setCam2(Vec2(10,10),Vec2(20,30)); // Does not change Z pos and Z scale
 ```
 
 This sets the camera position to the first parameter `pos`, the camera size to the second parameter `scale`, and the camera depth to the third parameter `depth`.
@@ -85,10 +85,9 @@ void setCameraDepth(int X); // sets the maximum depth that the camera can see
 void moveCamera(Vec3 V); // moves the camera
 ```
 
-To print the camera's view:
+To print the camera's view you can use the following function
 ```cpp
-void photo(); // prints camera's view
-std::vector<std::vector<std::string>> gPhoto(); // returns the camera view as a vector
+void Silver::Camera::printCam();
 ```
 
 **Example usage**:
@@ -129,7 +128,7 @@ void cell(int c);
 ```
 
 ### Debugging
-When you are rendering the camera, debugging something to the console is not easy. <br>
+When you render the camera, debugging something to the console is not easy. <br>
 Then, you can use `silver.debug` function. <br>
 Example:
 ```
