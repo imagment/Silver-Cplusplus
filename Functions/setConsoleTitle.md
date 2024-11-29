@@ -3,7 +3,7 @@
 ## Function prototype
 
 ```cpp
-void setConsoleTitle(const std::string & title);
+void Silver::setConsoleTitle(const string title);
 ```
 
 ## Implementation
