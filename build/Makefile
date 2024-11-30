@@ -130,6 +130,45 @@ Silver/fast:
 .PHONY : Silver/fast
 
 #=============================================================================
+# Target rules for targets named Silver.Keyboard
+
+# Build rule for target.
+Silver.Keyboard: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Silver.Keyboard
+.PHONY : Silver.Keyboard
+
+# fast build rule for target.
+Silver.Keyboard/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.Keyboard.dir/build.make CMakeFiles/Silver.Keyboard.dir/build
+.PHONY : Silver.Keyboard/fast
+
+#=============================================================================
+# Target rules for targets named Silver.VMouse
+
+# Build rule for target.
+Silver.VMouse: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Silver.VMouse
+.PHONY : Silver.VMouse
+
+# fast build rule for target.
+Silver.VMouse/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.VMouse.dir/build.make CMakeFiles/Silver.VMouse.dir/build
+.PHONY : Silver.VMouse/fast
+
+#=============================================================================
+# Target rules for targets named Silver.Timer
+
+# Build rule for target.
+Silver.Timer: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Silver.Timer
+.PHONY : Silver.Timer
+
+# fast build rule for target.
+Silver.Timer/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.Timer.dir/build.make CMakeFiles/Silver.Timer.dir/build
+.PHONY : Silver.Timer/fast
+
+#=============================================================================
 # Target rules for targets named MyGame
 
 # Build rule for target.
@@ -141,30 +180,6 @@ MyGame: cmake_check_build_system
 MyGame/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyGame.dir/build.make CMakeFiles/MyGame.dir/build
 .PHONY : MyGame/fast
-
-src/game.o: src/game.cpp.o
-.PHONY : src/game.o
-
-# target to build an object file
-src/game.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.dir/build.make CMakeFiles/Silver.dir/src/game.cpp.o
-.PHONY : src/game.cpp.o
-
-src/game.i: src/game.cpp.i
-.PHONY : src/game.i
-
-# target to preprocess a source file
-src/game.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.dir/build.make CMakeFiles/Silver.dir/src/game.cpp.i
-.PHONY : src/game.cpp.i
-
-src/game.s: src/game.cpp.s
-.PHONY : src/game.s
-
-# target to generate assembly for a file
-src/game.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.dir/build.make CMakeFiles/Silver.dir/src/game.cpp.s
-.PHONY : src/game.cpp.s
 
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
@@ -190,6 +205,102 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/MyGame.dir/build.make CMakeFiles/MyGame.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/silver.Keyboard.o: src/silver.Keyboard.cpp.o
+.PHONY : src/silver.Keyboard.o
+
+# target to build an object file
+src/silver.Keyboard.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.Keyboard.dir/build.make CMakeFiles/Silver.Keyboard.dir/src/silver.Keyboard.cpp.o
+.PHONY : src/silver.Keyboard.cpp.o
+
+src/silver.Keyboard.i: src/silver.Keyboard.cpp.i
+.PHONY : src/silver.Keyboard.i
+
+# target to preprocess a source file
+src/silver.Keyboard.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.Keyboard.dir/build.make CMakeFiles/Silver.Keyboard.dir/src/silver.Keyboard.cpp.i
+.PHONY : src/silver.Keyboard.cpp.i
+
+src/silver.Keyboard.s: src/silver.Keyboard.cpp.s
+.PHONY : src/silver.Keyboard.s
+
+# target to generate assembly for a file
+src/silver.Keyboard.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.Keyboard.dir/build.make CMakeFiles/Silver.Keyboard.dir/src/silver.Keyboard.cpp.s
+.PHONY : src/silver.Keyboard.cpp.s
+
+src/silver.Timer.o: src/silver.Timer.cpp.o
+.PHONY : src/silver.Timer.o
+
+# target to build an object file
+src/silver.Timer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.Timer.dir/build.make CMakeFiles/Silver.Timer.dir/src/silver.Timer.cpp.o
+.PHONY : src/silver.Timer.cpp.o
+
+src/silver.Timer.i: src/silver.Timer.cpp.i
+.PHONY : src/silver.Timer.i
+
+# target to preprocess a source file
+src/silver.Timer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.Timer.dir/build.make CMakeFiles/Silver.Timer.dir/src/silver.Timer.cpp.i
+.PHONY : src/silver.Timer.cpp.i
+
+src/silver.Timer.s: src/silver.Timer.cpp.s
+.PHONY : src/silver.Timer.s
+
+# target to generate assembly for a file
+src/silver.Timer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.Timer.dir/build.make CMakeFiles/Silver.Timer.dir/src/silver.Timer.cpp.s
+.PHONY : src/silver.Timer.cpp.s
+
+src/silver.VMouse.o: src/silver.VMouse.cpp.o
+.PHONY : src/silver.VMouse.o
+
+# target to build an object file
+src/silver.VMouse.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.VMouse.dir/build.make CMakeFiles/Silver.VMouse.dir/src/silver.VMouse.cpp.o
+.PHONY : src/silver.VMouse.cpp.o
+
+src/silver.VMouse.i: src/silver.VMouse.cpp.i
+.PHONY : src/silver.VMouse.i
+
+# target to preprocess a source file
+src/silver.VMouse.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.VMouse.dir/build.make CMakeFiles/Silver.VMouse.dir/src/silver.VMouse.cpp.i
+.PHONY : src/silver.VMouse.cpp.i
+
+src/silver.VMouse.s: src/silver.VMouse.cpp.s
+.PHONY : src/silver.VMouse.s
+
+# target to generate assembly for a file
+src/silver.VMouse.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.VMouse.dir/build.make CMakeFiles/Silver.VMouse.dir/src/silver.VMouse.cpp.s
+.PHONY : src/silver.VMouse.cpp.s
+
+src/silver.o: src/silver.cpp.o
+.PHONY : src/silver.o
+
+# target to build an object file
+src/silver.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.dir/build.make CMakeFiles/Silver.dir/src/silver.cpp.o
+.PHONY : src/silver.cpp.o
+
+src/silver.i: src/silver.cpp.i
+.PHONY : src/silver.i
+
+# target to preprocess a source file
+src/silver.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.dir/build.make CMakeFiles/Silver.dir/src/silver.cpp.i
+.PHONY : src/silver.cpp.i
+
+src/silver.s: src/silver.cpp.s
+.PHONY : src/silver.s
+
+# target to generate assembly for a file
+src/silver.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Silver.dir/build.make CMakeFiles/Silver.dir/src/silver.cpp.s
+.PHONY : src/silver.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -200,12 +311,24 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... MyGame"
 	@echo "... Silver"
-	@echo "... src/game.o"
-	@echo "... src/game.i"
-	@echo "... src/game.s"
+	@echo "... Silver.Keyboard"
+	@echo "... Silver.Timer"
+	@echo "... Silver.VMouse"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/silver.Keyboard.o"
+	@echo "... src/silver.Keyboard.i"
+	@echo "... src/silver.Keyboard.s"
+	@echo "... src/silver.Timer.o"
+	@echo "... src/silver.Timer.i"
+	@echo "... src/silver.Timer.s"
+	@echo "... src/silver.VMouse.o"
+	@echo "... src/silver.VMouse.i"
+	@echo "... src/silver.VMouse.s"
+	@echo "... src/silver.o"
+	@echo "... src/silver.i"
+	@echo "... src/silver.s"
 .PHONY : help
 
 

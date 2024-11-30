@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/imagment/Desktop/Silverside C++/src/silver.cpp" "CMakeFiles/Silver.dir/src/silver.cpp.o" "gcc" "CMakeFiles/Silver.dir/src/silver.cpp.o.d"
+  "/home/imagment/Desktop/Silverside C++/src/silver.Timer.cpp" "CMakeFiles/Silver.Timer.dir/src/silver.Timer.cpp.o" "gcc" "CMakeFiles/Silver.Timer.dir/src/silver.Timer.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

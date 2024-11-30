@@ -69,28 +69,28 @@ include CMakeFiles/Silver.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/Silver.dir/flags.make
 
-CMakeFiles/Silver.dir/src/game.cpp.o: CMakeFiles/Silver.dir/flags.make
-CMakeFiles/Silver.dir/src/game.cpp.o: /home/imagment/Desktop/Silverside\ C++/src/game.cpp
-CMakeFiles/Silver.dir/src/game.cpp.o: CMakeFiles/Silver.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/home/imagment/Desktop/Silverside C++/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/Silver.dir/src/game.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Silver.dir/src/game.cpp.o -MF CMakeFiles/Silver.dir/src/game.cpp.o.d -o CMakeFiles/Silver.dir/src/game.cpp.o -c "/home/imagment/Desktop/Silverside C++/src/game.cpp"
+CMakeFiles/Silver.dir/src/silver.cpp.o: CMakeFiles/Silver.dir/flags.make
+CMakeFiles/Silver.dir/src/silver.cpp.o: /home/imagment/Desktop/Silverside\ C++/src/silver.cpp
+CMakeFiles/Silver.dir/src/silver.cpp.o: CMakeFiles/Silver.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/home/imagment/Desktop/Silverside C++/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/Silver.dir/src/silver.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/Silver.dir/src/silver.cpp.o -MF CMakeFiles/Silver.dir/src/silver.cpp.o.d -o CMakeFiles/Silver.dir/src/silver.cpp.o -c "/home/imagment/Desktop/Silverside C++/src/silver.cpp"
 
-CMakeFiles/Silver.dir/src/game.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Silver.dir/src/game.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "/home/imagment/Desktop/Silverside C++/src/game.cpp" > CMakeFiles/Silver.dir/src/game.cpp.i
+CMakeFiles/Silver.dir/src/silver.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/Silver.dir/src/silver.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E "/home/imagment/Desktop/Silverside C++/src/silver.cpp" > CMakeFiles/Silver.dir/src/silver.cpp.i
 
-CMakeFiles/Silver.dir/src/game.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Silver.dir/src/game.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "/home/imagment/Desktop/Silverside C++/src/game.cpp" -o CMakeFiles/Silver.dir/src/game.cpp.s
+CMakeFiles/Silver.dir/src/silver.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/Silver.dir/src/silver.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S "/home/imagment/Desktop/Silverside C++/src/silver.cpp" -o CMakeFiles/Silver.dir/src/silver.cpp.s
 
 # Object files for target Silver
 Silver_OBJECTS = \
-"CMakeFiles/Silver.dir/src/game.cpp.o"
+"CMakeFiles/Silver.dir/src/silver.cpp.o"
 
 # External object files for target Silver
 Silver_EXTERNAL_OBJECTS =
 
-libSilver.a: CMakeFiles/Silver.dir/src/game.cpp.o
+libSilver.a: CMakeFiles/Silver.dir/src/silver.cpp.o
 libSilver.a: CMakeFiles/Silver.dir/build.make
 libSilver.a: CMakeFiles/Silver.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/home/imagment/Desktop/Silverside C++/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX static library libSilver.a"

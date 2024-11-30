@@ -1,6 +1,6 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/Silver.dir/src/game.cpp.o"
-  "CMakeFiles/Silver.dir/src/game.cpp.o.d"
+  "CMakeFiles/Silver.dir/src/silver.cpp.o"
+  "CMakeFiles/Silver.dir/src/silver.cpp.o.d"
   "libSilver.a"
   "libSilver.pdb"
 )

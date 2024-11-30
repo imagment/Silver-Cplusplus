@@ -1,0 +1,2 @@
+/usr/bin/ar qc libSilver.Keyboard.a CMakeFiles/Silver.Keyboard.dir/src/silver.Keyboard.cpp.o
+/usr/bin/ranlib libSilver.Keyboard.a

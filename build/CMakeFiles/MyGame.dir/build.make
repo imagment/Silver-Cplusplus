@@ -93,6 +93,8 @@ MyGame_EXTERNAL_OBJECTS =
 MyGame: CMakeFiles/MyGame.dir/src/main.cpp.o
 MyGame: CMakeFiles/MyGame.dir/build.make
 MyGame: libSilver.a
+MyGame: libSilver.Keyboard.a
+MyGame: libSilver.Timer.a
 MyGame: CMakeFiles/MyGame.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/home/imagment/Desktop/Silverside C++/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable MyGame"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/MyGame.dir/link.txt --verbose=$(VERBOSE)

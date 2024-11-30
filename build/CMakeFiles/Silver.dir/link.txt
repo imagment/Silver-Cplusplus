@@ -1,2 +1,2 @@
-/usr/bin/ar qc libSilver.a CMakeFiles/Silver.dir/src/game.cpp.o
+/usr/bin/ar qc libSilver.a CMakeFiles/Silver.dir/src/silver.cpp.o
 /usr/bin/ranlib libSilver.a

@@ -45,5 +45,8 @@ set(CMAKE_MAKEFILE_PRODUCTS
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/Silver.dir/DependInfo.cmake"
+  "CMakeFiles/Silver.Keyboard.dir/DependInfo.cmake"
+  "CMakeFiles/Silver.VMouse.dir/DependInfo.cmake"
+  "CMakeFiles/Silver.Timer.dir/DependInfo.cmake"
   "CMakeFiles/MyGame.dir/DependInfo.cmake"
   )

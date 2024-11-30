@@ -1,0 +1,2 @@
+/usr/bin/ar qc libSilver.VMouse.a CMakeFiles/Silver.VMouse.dir/src/silver.VMouse.cpp.o
+/usr/bin/ranlib libSilver.VMouse.a
