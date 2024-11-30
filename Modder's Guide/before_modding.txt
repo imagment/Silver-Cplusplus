@@ -12,6 +12,6 @@ Together, we can make Silver C++ an even better start for creating outstanding t
 
 Please feel free to read our documentations or share your idea in our community. 
 And please leave credits if you want to share your modifications. But feel free to
-use our work for commercial purposes. (Read more in our license. But seriously, credits please!)
+use our work for commercial purposes. (Read more in our license.)
 
 We will wait for you to fork and modify our project. Good Luck! 🚀
