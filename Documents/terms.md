@@ -14,4 +14,4 @@ However, `object` as a structure, `mesh` as a structure, and `sprite` as a class
 # W
 | Term             | Meaning                                                                                   |
 |------------------|-------------------------------------------------------------------------------------------|
-| **Workspace**       | The workspace is the game's object map. All objects added using the put or place functions are stored in this map. And most operations will be done to this map |
+| **workspace**       | The workspace is the game's object map. All objects added using the put or place functions are stored in this map. And most operations will be done to this map |
