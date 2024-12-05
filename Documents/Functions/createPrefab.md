@@ -10,7 +10,6 @@ void Silver::createPrefab(const string name, const string shape);
 
 ```cpp
 void Silver::createPrefab(const string name, const string shape) {
-
   if (!isValidName(name)) {
     silver.debug("From \"void Silver::createObject(const string name, const string shape)\" : Invalid object name containing unprintable characters ", "e");
     return;
