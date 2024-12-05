@@ -4,11 +4,14 @@ confused with the terms above.
 <br> <br>
 However, `object` as a structure, `mesh` as a structure, and `sprite` as a class have different meanings. Also, there is no class named `gameObject`.
 
+# S
 | Term             | Meaning                                                                                   |
 |------------------|-------------------------------------------------------------------------------------------|
-| **object**       | Refers to a general concept that can represent a game entity in the system (structure).    |
-| **sprites**      | Refers to game visuals (often 2D images or animations), usually implemented as classes.    |
-| **game object**  | Not a class, but a general term often used to describe entities in the game.               |
-| **prefabrication** | A specific term with a different meaning related to predefined assets or objects.        |
-| **UI**            | Stands for "User Interface," which refers to the visual elements for user interaction.    |
-| **mesh**          | Refers to a structure representing the geometry of a 3D object or surface.                |
+| **Silver**       | A text-based game engine made by Imagment. It stands for Simple Interactive Layered Visual Effect Renderer|
+| **Silver C++**   | A C++ Open-source library of Silver|
+| **sprites**      | A single entity in a workspace. It contains information such as name, number, position, etc|
+
+# W
+| Term             | Meaning                                                                                   |
+|------------------|-------------------------------------------------------------------------------------------|
+| **Workspace**       | The workspace is the game's object map. All objects added using the put or place functions are stored in this map. And most operations will be done to this map |
