@@ -34,5 +34,5 @@ This function is used to create a prefabrication of an object. This requires the
 
 ## Example Usage
 ```cpp
-silver.createObject("player","😊");
+Silver::createObject("player","😊");
 ```
