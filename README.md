@@ -1,4 +1,4 @@
-# silver.hpp Documentation
+# Silver C++ Developer Documentation
 
 ## Index
 
