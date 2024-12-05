@@ -25,8 +25,8 @@ mesh Silver::getMeshValue(int objID) {
 
 ## Example Usage
 ```cpp
-mesh player = silver.getMeshValue(playerID);
-getMesh(playerID)->intValues["lives"]=3;
+mesh player = Silver::getMeshValue(playerID);
+Silver::getMesh(playerID)->intValues["lives"]=3;
 ```
 
 ## Alternative
