@@ -3,27 +3,29 @@
 ## Function prototype
 
 ```cpp
-vector < int > Silver::findObjects(const string name, variant < vector < int > , int > number);
+vector <int> Silver::findObjects(const string name, variant <vector<int> , int> number);
 ```
 
 ## Implementation
 
 ```cpp
-vector < int > Silver::findObjects(const string name, variant < vector < int > , int > number) {
-  vector < int > numbers;
+vector<int> Silver::findObjects(const string name,
+                                variant<vector<int>, int> number) {
+  vector<int> numbers;
 
-  for (auto & entry: workspace) {
+  for (auto &entry : workspace) {
 
     if (entry.second.name == name) {
 
-      if (holds_alternative < vector < int >> (number)) {
-        vector < int > numList = get < vector < int >> (number);
+      if (holds_alternative<vector<int>>(number)) {
+        vector<int> numList = get<vector<int>>(number);
 
-        if (find(numList.begin(), numList.end(), entry.second.number) != numList.end()) {
+        if (find(numList.begin(), numList.end(), entry.second.number) !=
+            numList.end()) {
           numbers.push_back(entry.first);
         }
-      } else if (holds_alternative < int > (number)) {
-        int num = get < int > (number);
+      } else if (holds_alternative<int>(number)) {
+        int num = get<int>(number);
 
         if (entry.second.number == num || num == all_numbers) {
           numbers.push_back(entry.first);
@@ -42,6 +44,6 @@ If the number is all_numbers, it returns all objects with that name regardless o
 
 ## Example Usage
 ```cpp
-silver.place("player",5,Vec3(10,10,0));
-int playerID = silver.findObjects("player",5)[0];
+Silver::place("player",5,Vec3(10,10,0));
+int playerID = Silver::findObjects("player",5)[0];
 ```
