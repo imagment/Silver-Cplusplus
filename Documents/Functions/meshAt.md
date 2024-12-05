@@ -3,14 +3,14 @@
 ## Function prototypes
 
 ```cpp
-vector < mesh > MeshAt3(Vec3 pos);
-vector < mesh > MeshAt2(Vec3 pos);
+vector < mesh > MeshAt3(Vector3 pos);
+vector < mesh > MeshAt2(Vector3 pos);
 ```
 
 ## Implementation
 
 ```cpp
-vector < mesh > Silver::MeshAt2(Vec2 pos) {
+vector < mesh > Silver::MeshAt2(Vector2 pos) {
   vector < mesh > result;
 
   for (auto & entry: workspace) {
@@ -20,11 +20,11 @@ vector < mesh > Silver::MeshAt2(Vec2 pos) {
   return result;
 }
 
-vector < mesh > Silver::MeshAt3(Vec3 pos) {
+vector < mesh > Silver::MeshAt3(Vector3 pos) {
   vector < mesh > result;
 
   for (auto & entry: workspace) {
-    if (entry.second.object.position == pos) result.push_back(entry.second);
+    if (entry.second.position == pos) result.push_back(entry.second);
   }
 
   return result;
