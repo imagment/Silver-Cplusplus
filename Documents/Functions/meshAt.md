@@ -37,6 +37,6 @@ They both return a vector of mesh that is in that location.
 
 ## Example Usage
 ```
-int k = silver.place("player", 0, Vec3(10,10,0));
-mesh playerMesh = silver.MeshAt(Vec3(10,10,0));
+int k = Silver::place("player", 0, Vec3(10,10,0));
+mesh playerMesh = Silver::MeshAt(Vec3(10,10,0));
 ```
