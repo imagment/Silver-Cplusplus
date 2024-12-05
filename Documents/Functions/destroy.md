@@ -36,8 +36,8 @@ This function removes certain objects from the workspace. Removed objects no lon
 
 ## Example Usage
 ```cpp
-silver.destroy(playerId);
-silver.debug("Game Over" , "d");
+Silver::destroy(playerId);
+Silver::debug("Game Over" , "d");
 ```
 
 ## Alternative
