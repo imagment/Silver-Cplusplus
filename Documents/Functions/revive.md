@@ -37,7 +37,7 @@ This function revives an object previously removed using the kill function and b
 
 ## Example Usage
 ```cpp
-silver.kill(wallId);
-silver.wait(1000);
-silver.revive(wallId);
+Silver::kill(wallId);
+Silver::wait(1000);
+Silver::revive(wallId);
 ```
