@@ -1,8 +1,4 @@
-> Warning: <br>
-> This documentation is getting modified. <br>
-> Thanks for your patience. <br>
-
-# game.hpp Documentation
+# silver.hpp Documentation
 
 ## Index
 
