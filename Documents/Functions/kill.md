@@ -39,6 +39,6 @@ This function removes an object. It could return by using the `revive` function.
 ```cpp
 int playerId = 0;
 vector <int> zombieId = collectZombies();
-silver.kill(playerId);
-silver.kill(zombieId);
+Silver::kill(playerId);
+Silver::kill(zombieId);
 ```
