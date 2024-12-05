@@ -1,7 +1,3 @@
-> Warning: <br>
-> This documentation is getting modified. <br>
-> Thanks for your patience. <br>
-
 # Structure
 
 ## Index
@@ -20,10 +16,10 @@ Because the workspace is a map, you can perform various operations. <br>
 
 For example, 
 ```cpp
-int player = silver.put("player", Vec3(2,4,8)); // Places an object named 'player' and saves the object ID to variable 'player'
+int player = Silver::put("player", Vec3(2,4,8)); // Places an object named 'player' and saves the object ID to variable 'player'
 workspace.erase(player); // Removes an object with ID 'player' from the workspace.
-// Alternative: silver.destroy(player);
-// However, note that `workspace.erase(player);` is faster than `silver.destroy(player);`.
+// Alternative: Silver::destroy(player);
+// However, note that `workspace.erase(player);` is faster than `Silver::destroy(player);`.
 ```
 
 
@@ -36,10 +32,10 @@ Besides removing the object with the `destroy` function, there is another way to
 This means objects that are destroyed with the `kill` functions are temporarily removed from the `workspace` but can always return to the `workspace`. For example,
 
 ```cpp
-int player = silver.put("player", Vec3(2,4,8));
-silver.kill(player);
-silver.wait(1000); // Delay for 1 second to observe the change
-silver.revive(player);
+int player = Silver::put("player", Vec3(2,4,8));
+Silver::kill(player);
+Silver::wait(1000); // Delay for 1 second to observe the change
+Silver::revive(player);
 ```
 This code removes the player from the workspace and returns it after 1 second. During this second, the object is saved on a map called `killedSprites`. <br>
 like `workspace`, their key is the id of the object.
@@ -49,23 +45,28 @@ All Sprites placed in the workspace have a class called 'mesh'. Here is a struct
 ```cpp
 class mesh {
 public:
-    Vec3 position;
-    std::string name;
-    std::string shape;
-    int number;
-    std::map<std::string, int> intValues;
-    std::map<std::string, std::string> stringValues;
-    std::vector<std::string> tags;
-    int transparency;
-    components Components;
+  Vector3 position;
+  std::string name;
+  std::string shape;
+  int number;
+  std::map<std::string, int> intValues;
+  std::map<std::string, std::string> stringValues;
+  std::vector<std::string> tags;
+  bool isTransparent;
+  components comp;
 
-    mesh();                      
-    mesh(const prefab& pfb);  
-    void setTransparency(int value);
-    void translate2(Vec3 offset);
-    void translate3(Vec3 offset);
-    Vec3 getPos2() const;
-    Vec3 getPos3() const;
+  mesh() : position(), number(0), isTransparent(false) {}
+
+  mesh(const prefab &pfb)
+      : position(), name(pfb.name), shape(pfb.shape), number(0),
+        intValues(pfb.intValues), stringValues(pfb.stringValues),
+        tags(pfb.tags), isTransparent(pfb.isTransparent), comp(pfb.comp) {}
+
+  void setTransparence(bool value);
+  void translate2(Vector3 offset);
+  void translate3(Vector3 offset);
+  Vector3 getPos2();
+  Vector3 getPos3();
 };
 ```
 `position` indicates the position of the object. <br>
