@@ -37,13 +37,13 @@ char Silver::Keyboard::getKey() {
 ```
 
 ## Description
-This function gets a key and saves user's key to keyBuffer and returns the key that user had pressed. If user did not pressed any key, then it returns a null character 
+This function gets a key, saves the user's key to keyBuffer, and returns the key that the user had pressed. If the user did not press any key, then it returns a null character 
 and keyBuffer also becomes a null character.
 
 ## Example Usage
 ```cpp
 while(1) {
-  if(silver.keyboard.getKey() == 'a') {
+  if(Silver::Keyboard::getKey() == 'a') {
     printf("A had been pressed! \n");
   }
 }
