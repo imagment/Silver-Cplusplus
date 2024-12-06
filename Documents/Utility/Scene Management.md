@@ -14,7 +14,7 @@ void Silver::Scene::saveWorldAs(std::string name) {
   scenes[name] = workspace;
 }
 
-void Silver::Scene::changeSceneTo(std::string name) {
+void Silver::Scene::loadScene(std::string name) {
   auto it = scenes.find(name);
   if (it != scenes.end()) {
     workspace = it -> second;
