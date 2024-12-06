@@ -1,12 +1,14 @@
 # Scene Management
 ## Structure
 ```cpp
-namespace Keyboard {
-    const int upKey, downKey, leftKey, rightKey, escapeKey;
-    char keyBuffer;
-    char getKey();
-    bool isKey(int Key);
-    extern bool caseSensitive;
+// The Keyboard namespace
+namespace Silver {
+    namespace Keyboard {
+        const int upKey = 65, downKey = 66, leftKey = 68, rightKey = 67, escapeKey = 27; // ASCII codes keys that are frequently used
+	
+        char keyBuffer; // The most recently pressed key
+        bool caseSensitive = true;
+    }; 
 }; 
 ```
 ## Functions
