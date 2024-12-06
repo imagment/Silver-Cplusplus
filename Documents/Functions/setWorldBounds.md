@@ -21,11 +21,11 @@ Additionally, if you plan to use only a specific part of the world, it is recomm
 
 ## Example Usage
 ```cpp
-silver.setWorldBounds(Vec2(-100,-100),Vec2(100,100));
+Silver::setWorldBounds(Vec2(-100,-100),Vec2(100,100));
 ```
 
 ## Alternative
 ```cpp
-silver.WorldRangeStart = Vec2(-100,-100);
-silver.WorldRangeEnd = Vec2(100,100);
+Silver::WorldRangeStart = Vec2(-100,-100);
+Silver::WorldRangeEnd = Vec2(100,100);
 ```
