@@ -1,8 +1,4 @@
-> Warning: <br>
-> This documentation is getting modified. <br>
-> Thanks for your patience. <br>
-
-# game.hpp Documentation
+# Silver C++ Developer Documentation
 
 ## Index
 
@@ -34,25 +30,25 @@ Conversion to Vec3: Vec2 can automatically convert to Vec3. When converted, the 
 
 **Constructors**:
 ```cpp
-Vec3(int x, int y, int z) // Creates a 3D vector with specified x, y, and z components.
+Vector3(int x, int y, int z) // Creates a 3D vector with specified x, y, and z components.
 ```
 
 **Predefined Directions**:
 ```cpp
-vector.up() // Returns a vector (0, 1, 0) representing the upward direction.
-vector.down() // Returns a vector (0, -1, 0) representing the downward direction.
-vector.left() // Returns a vector (-1, 0, 0) representing the left direction.
-vector.right() // Returns a vector (1, 0, 0) representing the right direction.
-vector.forward() // Returns a vector (0, 0, 1) representing the forward direction.
-vector.backward() // Returns a vector (0, 0, -1) representing the backward direction.
-vector.zero() // Returns a vector (0, 0, 0) representing the origin or no movement.
+Vector3::up() // Returns a vector (0, 1, 0) representing the upward direction.
+Vector3::down() // Returns a vector (0, -1, 0) representing the downward direction.
+Vector3::left() // Returns a vector (-1, 0, 0) representing the left direction.
+Vector3::right() // Returns a vector (1, 0, 0) representing the right direction.
+Vector3::forward() // Returns a vector (0, 0, 1) representing the forward direction.
+Vector3::backward() // Returns a vector (0, 0, -1) representing the backward direction.
+Vector3::zero() // Returns a vector (0, 0, 0) representing the origin or no movement.
 ```
 
 **Example**:
 ```cpp
-Vec2 v1(3, 4);
-Vec3 v2(1, 2, 3);
-Vec3 result = v1 + v2 + vec3.up; // result is (4, 7, 3)
+Vector2 v1(3, 4);
+Vector3 v2(1, 2, 3);
+Vector3 result = v1 + v2 + vec3.up; // result is (4, 7, 3)
 ```
 
 ### Camera
@@ -65,8 +61,8 @@ void setCam(Vec3 pos, Vec3 scale, int depth);
 
 Example usage:
 ```cpp
-silver.camera.setCam3(Vec3(3,2,4),Vec3(6,6,8)); 
-silver.camera.setCam2(Vec2(10,10),Vec2(20,30)); // Does not change Z pos and Z scale
+Silver::Camera::setCam3(Vec3(3,2,4),Vec3(6,6,8)); 
+Silver::Camera::setCam2(Vec2(10,10),Vec2(20,30)); // Does not change Z pos and Z scale
 ```
 
 This sets the camera position to the first parameter `pos`, the camera size to the second parameter `scale`, and the camera depth to the third parameter `depth`.
@@ -100,12 +96,12 @@ while (1) {
 
 If you don't want to use a while loop or need better efficiency, you can use:
 ```cpp
-silver.camera.startVideo(1); // Starts video at 1 frame per second
+Silver::Camera::startVideo(1); // Starts video at 1 frame per second
 ```
 
 To stop the video:
 ```cpp
-silver.camera.stopVideo();
+Silver::Camera::stopVideo();
 ```
 
 ### Advanced Camera Functions & Cells
@@ -128,11 +124,11 @@ void cell(int c);
 ```
 
 ### Debugging
-When you render the camera, debugging something to the console is not easy. <br>
-Then, you can use `silver.debug` function. <br>
+When you render the camera, debugging something to the console is difficult. <br>
+Then, you can use the `Silver::debug` function. <br>
 Example:
 ```
-silver.debug("Hello World!","d");
+Silver::debug("Hello World!","d");
 
 ```
 "d" is for debug, and there are other types of debugs. <br>
@@ -168,7 +164,7 @@ void sprayLine(int spawns, Vec3 start, Vec3 end, string c);
 Drawing functions are in class 'Drawing' and can accessed with 'draw' <br>
 Example usage: <br>
 ```cpp
-draw.draw(Vec3(2,4,3),"#");
+Silver::Drawing::draw(Vec3(2,4,3),"#");
 ```
 
 <br>
@@ -193,11 +189,11 @@ int unoccupiedNumber(string objectName); // Returns a number that is not current
 ```
 When an object gets placed on the map, it requires a number. Also, some of the 2 objects might have the same number.
 ```cpp
-silver.place("player", 1, Vec2(10, 10));
-silver.place("player", 1, Vec2(10, 11)); // This is allowed
+Silver::place("player", 1, Vec2(10, 10));
+Silver::place("player", 1, Vec2(10, 11)); // This is allowed
 ```
 Objects are numbered for unique identification and manipulation within the world. So you can use the `void put(string objectName, Vec3 position);` function if the number doesn't matter much. <br>
-Also, placing related functions like `placeObject`, `addObject` and `put` returns an integer. That integer is used in doing most of the operations. 
+Also, placing related functions like `placeObject`, `addObject`, and `put` return an integer. That integer is used in most of the operations. 
 
 ```cpp
 void Line(Vec3 start, Vec3 end, string name, int number);
@@ -222,7 +218,7 @@ void revive(variant<int, vector<int>> objIDs);
 
 void destroy(variant<int, vector<int>> objIDs);
 ```
-The `kill` Function removes the object from the workspace and `revive` function brings it back. <br>
+The `kill` Function removes the object from the workspace and `revive` function returns it. <br>
 To delete the object completely, use the `destroy` function. <br>
 <br>
 ```cpp
