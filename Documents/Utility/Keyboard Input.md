@@ -45,7 +45,7 @@ bool Silver::Keyboard::isLastKey(char key) {
 
 ## Function explanation
 `getKey`: Retrieves a key input, stores it in the `keyBuffer`, and returns the updated value of the `keyBuffer`.
-`isKey`: Get the workspace in the `scenes` map and set that map to the current workspace. <br>
+`isKey`: Checks if a certain key is the most recently pressed key. <br>
 
 ## Other members
 ```cpp
