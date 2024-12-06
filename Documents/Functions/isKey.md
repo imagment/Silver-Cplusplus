@@ -3,19 +3,24 @@
 ## Function prototype
 
 ```cpp
-char Silver::Keyboard::getKey();
+char Silver::Keyboard::isKey(int key);
 ```
 
 ## Implementation
 
 ```cpp
 bool Silver::Keyboard::isKey(int key) {
+  // Get the most recently pressed key and process it
   if (!Keyboard::caseSensitive && key >= 'a' && key <= 'z') {
     key -= 'a' - 'A';
   }
+  
+  // If 'key' is the recently pressed key, return true
   if (keyBuffer == key) {
     return true;
   }
+  
+  // If not, return false
   return false;
 }
 ```
