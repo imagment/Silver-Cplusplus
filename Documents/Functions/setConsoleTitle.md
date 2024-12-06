@@ -19,5 +19,5 @@ This function sets the title of the console.
 
 ## Example Usage
 ```cpp
-silver.setConsoleTitle("Hello World");
+Silver::setConsoleTitle("Hello World");
 ```
