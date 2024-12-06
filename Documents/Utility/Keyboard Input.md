@@ -2,8 +2,11 @@
 ## Structure
 ```cpp
 namespace Keyboard {
-    const int upKey = 65, downKey = 66, leftKey = 68, rightKey = 67, escapeKey = 27;
+    const int upKey, downKey, leftKey, rightKey, escapeKey;
     char keyBuffer;
+    char getKey();
+    bool isKey(int Key);
+    extern bool caseSensitive;
 }; 
 ```
 ## Functions
