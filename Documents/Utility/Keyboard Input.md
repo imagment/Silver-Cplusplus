@@ -53,14 +53,19 @@ char keyBuffer;
 ```
 The keyBuffer variable stores the value of the most recently pressed key.
 
+```cpp
+const int upKey = 65, downKey = 66, leftKey = 68, rightKey = 67, escapeKey = 27;
+```
+These 5 constants represent the ASCII codes for commonly used keyboard inputs. They are arrow keys and escape keys.
+
 ## Warning
 Avoid using the `getKey` function multiple times in a loop.
 ```
 while (1) {
-  if(Silver::Keyboard::getKey() == 's') {
+  if(Silver::Keyboard::getKey() == 'S') {
     std::cout << "The S key has been pressed!" << std::endl;
   }
-  if(Silver::Keyboard::getKey() == 't') {
+  if(Silver::Keyboard::getKey() == 'T') {
     std::cout << "The T key has been pressed!" << std::endl;
   }
 }
