@@ -68,7 +68,7 @@ These five constants represent the ASCII codes for commonly used keyboard inputs
 ```cpp
 bool caseSensitive = true;
 ```
-Determines whether the system treats lowercase and uppercase letters as the same (false) or different (true). For instance, when `caseSensitive` is true, 's' and 'S' keys are treated as the same key.
+Determines whether the system treats lowercase and uppercase letters as the same (false) or different (true). For instance, when `caseSensitive` is true, 's' and 'S' keys are treated as different keys.
 
 
 ## Warning
@@ -87,10 +87,10 @@ Instead, this is more efficient.
 ```
 while (1) {
   Silver::Keyboard::getKey();
-  if(Silver::Keyboard::keyBuffer == 's') {
+  if(Silver::Keyboard::isKey('s')) {
     std::cout << "The S key has been pressed!" << std::endl;
   }
-  if(Silver::Keyboard::keyBuffer == 't') {
+  if(Silver::Keyboard::isKey('t')) {
     std::cout << "The T key has been pressed!" << std::endl;
   }
 }
