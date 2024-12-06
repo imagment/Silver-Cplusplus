@@ -14,20 +14,21 @@ char Silver::Keyboard::getKey() {
   int ch;
   int oldf;
 
-  tcgetattr(STDIN_FILENO, & oldt);
+  tcgetattr(STDIN_FILENO, &oldt);
   newt = oldt;
   newt.c_lflag &= ~(ICANON | ECHO);
-  tcsetattr(STDIN_FILENO, TCSANOW, & newt);
+  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
   oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
   fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
   ch = getchar();
 
-  tcsetattr(STDIN_FILENO, TCSANOW, & oldt);
+  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
   fcntl(STDIN_FILENO, F_SETFL, oldf);
 
   if (ch != EOF) {
-    if (ch >= 'a' && ch <= 'z') ch += 'A' - 'a';
+    if (!Keyboard::caseSensitive && ch >= 'a' && ch <= 'z')
+      ch += 'A' - 'a';
     keyBuffer = ch;
     return ch;
   }
@@ -37,15 +38,15 @@ char Silver::Keyboard::getKey() {
 ```
 
 ## Description
-This function gets a key, saves the user's key to keyBuffer, and returns the key that the user had pressed. If the user did not press any key, then it returns a null character 
-and keyBuffer also becomes a null character.
+This function gets the key and saves it to the key buffer and returns the updated value of the key buffer.
 
 ## Example Usage
 ```cpp
-while(1) {
-  if(Silver::Keyboard::getKey() == 'a') {
-    printf("A had been pressed! \n");
-  }
+Silver::Keyboard::getKey();
+if(Silver::Keyboard::keyBuffer == 's') {
+  std::cout << "The S key has been pressed!" << std::endl;
+}
+if(Silver::Keyboard::keyBuffer == 't') {
+  std::cout << "The T key has been pressed!" << std::endl;
 }
 ```
-
