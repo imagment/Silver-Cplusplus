@@ -56,7 +56,7 @@ The keyBuffer variable stores the value of the most recently pressed key.
 ```cpp
 const int upKey = 65, downKey = 66, leftKey = 68, rightKey = 67, escapeKey = 27;
 ```
-These 5 constants represent the ASCII codes for commonly used keyboard inputs. They are arrow keys and escape keys.
+These five constants represent the ASCII codes for commonly used keyboard inputs. They are arrow keys and escape keys.
 
 ## Warning
 Avoid using the `getKey` function multiple times in a loop.
