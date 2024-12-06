@@ -26,7 +26,7 @@ char Silver::Keyboard::getKey() {
   fcntl(STDIN_FILENO, F_SETFL, oldf);
 
   if (ch != EOF) {
-    if (ch >= 'a' && ch <= 'z')
+    if (!Keyboard::caseSensitive && ch >= 'a' && ch <= 'z')
       ch += 'A' - 'a';
     keyBuffer = ch;
     return ch;
@@ -35,7 +35,10 @@ char Silver::Keyboard::getKey() {
   return '\0';
 }
 
-bool Silver::Keyboard::isLastKey(char key) {
+bool Silver::Keyboard::isKey(int key) {
+  if (!Keyboard::caseSensitive && key >= 'a' && key <= 'z') {
+    key -= 'a' - 'A';
+  }
   if (keyBuffer == key) {
     return true;
   }
@@ -44,7 +47,8 @@ bool Silver::Keyboard::isLastKey(char key) {
 ```
 
 ## Function explanation
-`getKey`: Retrieves a key input, stores it in the `keyBuffer`, and returns the updated value of the `keyBuffer`.
+`getKey`: Retrieves a key input, stores it in the `keyBuffer`, and returns the updated value of the `keyBuffer`. <br>
+Also no
 `isKey`: Checks if a certain key is the most recently pressed key. <br>
 
 ## Other members
@@ -57,6 +61,12 @@ The keyBuffer variable stores the value of the most recently pressed key.
 const int upKey = 65, downKey = 66, leftKey = 68, rightKey = 67, escapeKey = 27;
 ```
 These five constants represent the ASCII codes for commonly used keyboard inputs. They are arrow keys and escape keys.
+
+```cpp
+bool caseSensitive = true;
+```
+Determines whether the system treats lowercase and uppercase letters as the same (false) or different (true). For instance, when `caseSensitive` is true, 's' and 'S' keys are treated as the same key.
+
 
 ## Warning
 Avoid using the `getKey` function multiple times in a loop.
