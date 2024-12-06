@@ -30,7 +30,7 @@ void Silver::Scene::resetScene() {
 ## Function explanation
 `saveWorldAs`: Saves the workspace into the `scenes` map. <br>
 `changeSceneTo`: Get the workspace in the `scenes` map and set that map to the current workspace. <br>
-`resetScene`: Resets the current scene.
+`resetScene`: Removes all objects in the current scene.
 
 ## Other members
 ```cpp
