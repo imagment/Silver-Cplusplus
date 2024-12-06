@@ -18,7 +18,7 @@ void Silver::Scene::saveWorldAs(std::string name) {
 This function saves the current scene (workspace map) into the `scenes` map. You can change to another scene save in the `scenes` map using the `changeSceneTo` function.
 ## Example Usage
 ```cpp
-silver.scene.saveWorldAs("menu");
+Silver::scene.saveWorldAs("menu");
 ```
 ## Alternative
 Instead of using the current function, you can save the current world state in a map. The map can have an integer as the key and either a mesh or World type as the value. For example:
