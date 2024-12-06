@@ -1,17 +1,15 @@
-# Function name : saveWorldAs
+# Function name : saveCurrentWorld
 
 ## Function prototype
 
 ```cpp
-void Silver::Scene::saveWorldAs(std::string name);
+void Silver::Scene::saveCurrentWorld(std::string name);
 ```
 
 ## Implementation
 
 ```cpp
-void Silver::Scene::saveWorldAs(std::string name) {
-  scenes[name] = workspace;
-}
+void Silver::Scene::saveCurrentWorld(std::string name) {  scenes[name] = workspace; }
 ```
 
 ## Description
