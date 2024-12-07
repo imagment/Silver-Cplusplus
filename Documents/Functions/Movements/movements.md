@@ -63,24 +63,39 @@ void glideObjectPositionToSprite(
     float speed); // Glides an object to another object
 void glideObjectRandom(const std::variant<int, std::vector<int>> &ids,
                        const std::pair<int, int> &xRange,
-                       const std::pair<int, int> &yRange, float speed); // Glides and object to a random position
+                       const std::pair<int, int> &yRange, float speed); // Glides an object to a random position
 ```
-These functions get object ID(s) and offsets. The object ID(s) can be a single integer or a vector of multiple integers. These functions changes object's 
-position and gradually move an object to its destination. <br>
+These functions get object ID(s) and offsets. The object ID(s) can be a single integer or a vector of multiple integers. These functions change an object's
+position and gradually move it to its destination. <br>
 
 ### Usage
 ```cpp
 // Original position of the player : (3,3)
-Silver::glideObjectY(playerID, 14, 500); // Glides object Y position to Y=14. It would take 500 miliseconds per a step
-Silver::glideObjectXY(playerID, Vec2(5,7), 500); // Glides object to (5,7). It would take 500 miliseconds per a step
-Silver::glideObjectXY(playerID, Vec2(5,7), 500, true); // Because the last parameter is true, it would add (5,7) to the object's position.
+Silver::glideObjectY(playerID, 14, 5000); // Glides object Y position to Y=14. It would take 5000 miliseconds.
+Silver::glideObjectXY(playerID, Vec2(5,7), 5000); // Glides object to (5,7). It would take 5000 miliseconds.
+Silver::glideObjectXY(playerID, Vec2(5,7), 5000, true); // Because the last parameter is true, it would add (5,7) to the object's position.
 ```
 
-If current position of the object is `(a,b)` `Silver::glideObjectXY(playerID, Vec2(x,y), 500, true);` and `Silver::glideObjectXY(playerID, Vec2(x,y), 500, false);`
-has different effects. `Silver::glideObjectXY(playerID, Vec2(x,y), 500, true);` changes object's position to `(x,y)` but `Silver::glideObjectXY(playerID, Vec2(x,y), 500, false);`
+If current position of the object is `(a,b)` `Silver::glideObjectXY(playerID, Vec2(x,y), 5000, true);` and `Silver::glideObjectXY(playerID, Vec2(x,y), 5000, false);`
+has different effects. `Silver::glideObjectXY(playerID, Vec2(x,y), 5000, true);` changes object's position to `(x,y)` but `Silver::glideObjectXY(playerID, Vec2(x,y), 5000, false);`
 changes object's position to `(a+x, b+y)`. 
 
-`Silver::glideObjectXY(playerID, Vec2(x,y), 500, false);` could be also written as `Silver::glideObjectXY(playerID, Vec2(x,y), 500);`
+`Silver::glideObjectXY(playerID, Vec2(x,y), 5000, false);` could be also written as `Silver::glideObjectXY(playerID, Vec2(x,y), 5000);`
+
+When using the gliding function to multiple sprites, they will arrive at their destination in unison
 
 ## Other functions
-
+```cpp
+void mesh::translate2(Vector2 offset);
+void mesh::translate3(Vector3 offset);
+```
+These functions are member functions of the `mesh` class and their functions. Their functions are similar to functions starting with `move`.
+### Usage
+```cpp
+workspace[playerId].translate3(Vector3(x,y,z));
+```
+## Alternative
+You can modify someMesh.object.position instead of using these functions.
+```cpp
+workspace[objectId] = Vector3.zero();
+```
