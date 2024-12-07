@@ -56,6 +56,9 @@ Vector3 v2(1, 2, 3);
 Vector3 result = v1 + v2 + vec3.up; // result is (4, 5, 3)
 ```
 
+> Warning:
+> In Silver C++, Negative Y represents up and Positive Y represents down.
+
 ### Camera
 **NOTE: All camera-related functions are in the class 'Camera'**
 
