@@ -1,11 +1,5 @@
 # Function name : gotoxy
 ## Function prototype
-
-```cpp
-# Function name : createPrefab
-
-## Function prototype
-
 ```cpp
 void gotoxy(int x, int y);
 ```
