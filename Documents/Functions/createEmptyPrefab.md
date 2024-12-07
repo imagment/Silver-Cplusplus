@@ -27,5 +27,5 @@ This function is used to create a prefabrication of an object. And this object w
 
 ## Example Usage
 ```cpp
-Silver::createObject("Death Checker");
+Silver::createEmptyPrefab("Death Checker");
 ```
