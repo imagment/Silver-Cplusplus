@@ -180,11 +180,11 @@ Silver::Drawing::draw(Vector3(2,4,3),"#");
 To create an object, you can use the following function: <br>
 
 ``` cpp
-void createEmptyObject(const string name);
-void createObject(const std::string name, const std::string shape);
+void createEmptyPrefab(const string name);
+void createPrefab(const std::string name, const std::string shape);
 ```
-`createObject` creates an object named `name` and will look like `shape`. <br>
-`createEmptyObject` creates an object named `name` and will not be shown. <br>
+`createPrefab` creates an object named `name` and will look like `shape`. <br>
+`createEmptyPrefab` creates an object named `name` and will not be shown. <br>
 <br>
 If you create an object, you can use one of these functions:
 
