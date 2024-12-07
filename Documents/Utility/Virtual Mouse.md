@@ -35,7 +35,7 @@ void Silver::Mouse::stopVMouse() {
   VMouse.store(false);
 }
 
-bool Silver::Mouse::isMouse() {
+bool Silver::Mouse::wasMouseClicked() {
   if (Silver::Keyboard::keyBuffer == mouseKey) {
     return true;
   }
@@ -46,7 +46,7 @@ bool Silver::Mouse::isMouse() {
 ## Function explanation
 `startMouse` : Starts the virtual mouse. It needs five parameters (`int l, int r, int u, int d, int c`) which is the 5 ascii codes for the key to move/click the mouse pointer
 `stopVMouse` : Stops the virtual mouse
-`wasMouse` : Check if the last key press is the key for clicking the mouse
+`wasMouseClicked` : Checks if the most recently pressed key is the key for clicking the mouse
 
 ## Other members
 ```cpp
