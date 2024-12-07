@@ -1,4 +1,4 @@
-# Function name : createPrefab
+# Function name : getRandom
 
 ## Function prototype
 
