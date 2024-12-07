@@ -40,7 +40,7 @@ vector<int> Silver::getObjectsAt3(Vector3 pos) {
 ## Description
 The `getObjectsAt2` function finds meshes located at a specific position but the Z position does not matter and uses Vec2 for the position.
 The `getObjectsAt3` function, on the other hand, finds meshes at a specific position and the Z axis also matters.
-These functions returns a vector of object IDs.
+These functions return a vector of object IDs.
 
 ## Example Usage
 ```cpp
