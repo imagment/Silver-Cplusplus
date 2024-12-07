@@ -18,8 +18,8 @@ void Silver::Scene::loadScene(const string name) {
 ```
 
 ## Description
-This function is used to load a saved scene in the `scene` map. You can save the current scene with the `saveCurrentWorld` function.
-If you want to keep the current scene, you should save the current scene before you load the other scene.
+This function loads a saved scene in the `scene` map. You can save the current scene with the `saveCurrentWorld` function.
+If you want to keep the current scene, you should save it before you load the other scene.
 
 ## Example Usage
 ```cpp
