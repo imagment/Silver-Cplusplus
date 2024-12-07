@@ -82,7 +82,7 @@ void setCameraFlip(bool x, bool y); // true: Flipped, false: Normal
 void flipCamera(bool x, bool y); // true: Toggle, false: Leave it
 void pivotCamera(int angle); // Set camera's rotation
 void addPivotCamera(int angle); // Adds to the camera's current rotation
-void shakeCamera(float intensity); //Sshakes the camera
+void shakeCamera(float intensity); //Shakes the camera
 void zoomCamera(Vector3 v); // Changes the camera scale
 void moveCamera(Vector3 v); // Moves the camera in a certain offset
 ```
