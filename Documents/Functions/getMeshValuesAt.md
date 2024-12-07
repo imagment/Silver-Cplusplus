@@ -3,8 +3,8 @@
 ## Function prototypes
 
 ```cpp
-vector < mesh > getMeshValuesAt3(Vector3 pos);
 vector < mesh > getMeshValuesAt2(Vector3 pos);
+vector < mesh > getMeshValuesAt3(Vector3 pos);
 ```
 
 ## Implementation
