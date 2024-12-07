@@ -68,4 +68,4 @@ This variable contains the ASCII code of a key that triggers a click action for 
 ```cpp
 bool hideMouse;
 ```
-This variable contains if the mouse pointer would be visible or not.
+This variable decides whether the mouse pointer will be visible or not.
