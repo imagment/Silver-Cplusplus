@@ -13,7 +13,7 @@ void Silver::Scene::saveCurrentWorld(std::string name) {  scenes[name] = workspa
 ```
 
 ## Description
-This function saves the current scene (workspace map) into the `scenes` map. You can change to another scene save in the `scenes` map using the `changeSceneTo` function.
+This function saves the current scene (workspace map) into the `scenes` map. You can change to another scene save in the `scenes` map using the `loadScene` function.
 ## Example Usage
 ```cpp
 Silver::Scene::saveCurrentScene("menu");
