@@ -1,0 +1,4 @@
+/home/imagment/Desktop/Silver-Cplusplus-main/build/CMakeFiles/Silver.dir
+/home/imagment/Desktop/Silver-Cplusplus-main/build/CMakeFiles/MyGame.dir
+/home/imagment/Desktop/Silver-Cplusplus-main/build/CMakeFiles/edit_cache.dir
+/home/imagment/Desktop/Silver-Cplusplus-main/build/CMakeFiles/rebuild_cache.dir

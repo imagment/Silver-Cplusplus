@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/MyApp.dir/src/main.cpp.o -o MyApp  libSilver.a

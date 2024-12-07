@@ -1,0 +1,2 @@
+/usr/bin/ar qc libSilver.a CMakeFiles/Silver.dir/src/silver.cpp.o CMakeFiles/Silver.dir/src/silver.Keyboard.cpp.o CMakeFiles/Silver.dir/src/silver.VMouse.cpp.o CMakeFiles/Silver.dir/src/silver.Timer.cpp.o CMakeFiles/Silver.dir/src/silver.Threading.cpp.o
+/usr/bin/ranlib libSilver.a
