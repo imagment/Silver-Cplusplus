@@ -9,6 +9,7 @@ namespace Mouse {
   int mouseKey;
   int cursorPositionX;
   int cursorPositionY;
+  bool hideMouse;
   std::string mouseIcon;
 };
 ```
@@ -63,3 +64,8 @@ This represents the icon of the mouse pointer.
 int mouseKey;
 ```
 This variable contains the ASCII code of a key that triggers a click action for the VMouse.
+
+```cpp
+bool hideMouse;
+```
+This variable contains if the mouse pointer would be visible or not.
