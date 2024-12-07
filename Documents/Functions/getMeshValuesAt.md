@@ -32,8 +32,9 @@ vector < mesh > Silver::getMeshValuesAt3(Vector3 pos) {
 ```
 
 ## Description
-This function is used to find a mesh in a certain location. The parameters are Vec2 and Vec3. 
-They both return a vector of mesh that is in that location.
+The `getMeshValuesAt2` function finds meshes located at a specific position but the Z position does not matter and uses Vec2 for the position.
+The `getMeshValuesAt3` function, on the other hand, finds meshes at a specific position and the Z axis also matters.
+These function returns a vector of meshes.
 
 ## Example Usage
 ```
