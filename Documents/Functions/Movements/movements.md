@@ -36,7 +36,7 @@ void setObjectXY(const std::variant<int, std::vector<int>> objectID,
                  Vector2 pos); // Updates X and Y coordinates
 
 
-void setObjectPositionToSprite(const std::variant<int, std::vector<int>> objectIDs, int spriteID); // Changes object's location to another object's location
+void setObjectToTarget(const std::variant<int, std::vector<int>> objectIDs, int spriteID); // Changes object's location to another object's location
 void setObjectRandom(const std::variant<int, std::vector<int>> objectID,
                      const std::pair<int, int> &xRange,
                      const std::pair<int, int> &yRange); // Changes object's location to a random position
@@ -59,7 +59,7 @@ void glideObjectY(const std::variant<int, std::vector<int>> &ids, int y_offset,
 void glideObjectXY(const std::variant<int, std::vector<int>> &ids,
                    Vector2 offset, float speed, ...); // Updates both coordinates
 
-void glideObjectPositionToSprite(
+void glideObjectToTarget(
     const std::variant<int, std::vector<int>> objectIDs, int spriteID,
     float speed); // Glides an object to another object
 void glideObjectRandom(const std::variant<int, std::vector<int>> &ids,
