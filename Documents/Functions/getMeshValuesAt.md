@@ -1,16 +1,16 @@
-# Function name : MeshAt2, MeshAt3
+# Function name : getMeshValuesAt2, getMeshValuesAt3
 
 ## Function prototypes
 
 ```cpp
-vector < mesh > MeshAt3(Vector3 pos);
-vector < mesh > MeshAt2(Vector3 pos);
+vector < mesh > getMeshValuesAt3(Vector3 pos);
+vector < mesh > getMeshValuesAt2(Vector3 pos);
 ```
 
 ## Implementation
 
 ```cpp
-vector < mesh > Silver::MeshAt2(Vector2 pos) {
+vector < mesh > Silver::getMeshValuesAt2(Vector2 pos) {
   vector < mesh > result;
 
   for (auto & entry: workspace) {
@@ -20,7 +20,7 @@ vector < mesh > Silver::MeshAt2(Vector2 pos) {
   return result;
 }
 
-vector < mesh > Silver::MeshAt3(Vector3 pos) {
+vector < mesh > Silver::getMeshValuesAt3(Vector3 pos) {
   vector < mesh > result;
 
   for (auto & entry: workspace) {
@@ -38,5 +38,5 @@ They both return a vector of mesh that is in that location.
 ## Example Usage
 ```
 int k = Silver::place("player", 0, Vec3(10,10,0));
-mesh playerMesh = Silver::MeshAt(Vec3(10,10,0));
+mesh playerMesh = Silver::getMeshValuesAt3(Vec3(10,10,0));
 ```
