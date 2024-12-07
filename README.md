@@ -35,20 +35,25 @@ Vector3(int x, int y, int z) // Creates a 3D vector with specified x, y, and z c
 
 **Predefined Directions**:
 ```cpp
-Vector3::up() // Returns a vector (0, 1, 0) representing the upward direction.
-Vector3::down() // Returns a vector (0, -1, 0) representing the downward direction.
+Vector3::up() // Returns a vector (0, -1, 0) representing the upward direction.
+Vector3::down() // Returns a vector (0, 1, 0) representing the downward direction.
 Vector3::left() // Returns a vector (-1, 0, 0) representing the left direction.
 Vector3::right() // Returns a vector (1, 0, 0) representing the right direction.
 Vector3::forward() // Returns a vector (0, 0, 1) representing the forward direction.
 Vector3::backward() // Returns a vector (0, 0, -1) representing the backward direction.
 Vector3::zero() // Returns a vector (0, 0, 0) representing the origin or no movement.
+
+Vector2::up() // Returns a vector (0, -1) representing the upward direction.
+Vector2::down() // Returns a vector (0, 1) representing the downward direction.
+Vector2::left() // Returns a vector (-1, 0) representing the left direction.
+Vector2::right() // Returns a vector (1, 0) representing the right direction.
 ```
 
 **Example**:
 ```cpp
 Vector2 v1(3, 4);
 Vector3 v2(1, 2, 3);
-Vector3 result = v1 + v2 + vec3.up; // result is (4, 7, 3)
+Vector3 result = v1 + v2 + vec3.up; // result is (4, 5, 3)
 ```
 
 ### Camera
