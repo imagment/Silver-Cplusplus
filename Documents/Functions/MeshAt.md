@@ -1,4 +1,4 @@
-# Function name : meshAt2, meshAt3
+# Function name : MeshAt2, MeshAt3
 
 ## Function prototypes
 
