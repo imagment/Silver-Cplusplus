@@ -78,15 +78,13 @@ This sets the camera position to the first parameter `pos`, and the camera size 
 There are a variety of functions to control the camera:
 
 ```cpp
-void flipCamera(int X, int Y); // 1 not toggle, -1 toggle
-void SetCameraFlip(int X, int Y); // 1 normal, -1 mirror
-void pivotCamera(int angle); // rotates the camera
-void addPivotCamera(int angle); // adds to the camera's current rotation
-void shakeCamera(float intensity); // shakes the camera
-void zoomCamera(Vector3 V); // makes the camera larger
-void addCameraDepth(int X); // increases the maximum depth that the camera can see
-void setCameraDepth(int X); // sets the maximum depth that the camera can see
-void moVectoramera(Vector3 V); // moves the camera
+void setCameraFlip(bool x, bool y); // true: Flipped, false: Normal
+void flipCamera(bool x, bool y); // true: Toggle, false: Leave it
+void pivotCamera(int angle); // Set camera's rotation
+void addPivotCamera(int angle); // Adds to the camera's current rotation
+void shakeCamera(float intensity); //Sshakes the camera
+void zoomCamera(Vector3 v); // Changes the camera scale
+void moveCamera(Vector3 v); // Moves the camera in a certain offset
 ```
 
 To print the camera's view you can use the following function
