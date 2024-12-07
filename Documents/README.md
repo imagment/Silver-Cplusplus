@@ -63,16 +63,17 @@ Vector3 result = v1 + v2 + vec3.up; // Result is (4, 5, 3)
 
 You can use this function to set the camera position:
 ```cpp
-void setCam(Vector3 pos, Vector3 scale, int depth);
+void setCam2(Vector2 pos, Vector2 scale);
+void setCam3(Vector3 pos, Vector3 scale);
 ```
 
 Example usage:
 ```cpp
+Silver::Camera::setCam2(Vector2(10,10),Vector2(20,30)); // Does not change Z pos and scale
 Silver::Camera::setCam3(Vector3(3,2,4),Vector3(6,6,8)); 
-Silver::Camera::setCam2(Vector2(10,10),Vector2(20,30)); // Does not change Z pos and Z scale
 ```
 
-This sets the camera position to the first parameter `pos`, the camera size to the second parameter `scale`, and the camera depth to the third parameter `depth`.
+This sets the camera position to the first parameter `pos`, and the camera size to the second parameter `scale`.
 
 There are a variety of functions to control the camera:
 
