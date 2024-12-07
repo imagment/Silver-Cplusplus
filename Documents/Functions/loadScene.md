@@ -10,19 +10,27 @@ void Silver::Scene::loadScene(const string name);
 
 ```cpp
 void Silver::Scene::loadScene(const string name) {
-  auto it = scenes.find(name);
-  if (it != scenes.end()) {
+  auto it = savedScenes.find(name);
+  if (it != savedScenes.end()) {
     workspace = it->second;
   }
 }
 ```
 
 ## Description
-This function looks for a scene in the scenes map by its name. If the scene is found, it sets the current scene (workspace) to the found scene.
+This function is used to load a saved scene in the `scene` map. You can save the current scene with the `saveCurrentWorld` function.
+If you want to keep the current scene, you should save the current scene before you load the other scene.
 
 ## Example Usage
 ```cpp
-Silver::Scene::loadScene("menu");
+createMenuScene(); // Create the menu scene
+Silver::Scene::saveCurrentWorld("menu");
+while(canStart()) {
+  Silver::wait(10); // Wait until the game can start
+}
+startGame();
+// Show menu screen when game is over
+Silver::loadScene("menu");
 ```
 
 ## Alternative
