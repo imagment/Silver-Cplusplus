@@ -63,29 +63,28 @@ Vector3 result = v1 + v2 + vec3.up; // Result is (4, 5, 3)
 
 You can use this function to set the camera position:
 ```cpp
-void setCam(Vector3 pos, Vector3 scale, int depth);
+void setCam2(Vector2 pos, Vector2 scale);
+void setCam3(Vector3 pos, Vector3 scale);
 ```
 
 Example usage:
 ```cpp
+Silver::Camera::setCam2(Vector2(10,10),Vector2(20,30)); // Does not change Z pos and scale
 Silver::Camera::setCam3(Vector3(3,2,4),Vector3(6,6,8)); 
-Silver::Camera::setCam2(Vector2(10,10),Vector2(20,30)); // Does not change Z pos and Z scale
 ```
 
-This sets the camera position to the first parameter `pos`, the camera size to the second parameter `scale`, and the camera depth to the third parameter `depth`.
+This sets the camera position to the first parameter `pos`, and the camera size to the second parameter `scale`.
 
 There are a variety of functions to control the camera:
 
 ```cpp
-void flipCamera(int X, int Y); // 1 not toggle, -1 toggle
-void SetCameraFlip(int X, int Y); // 1 normal, -1 mirror
-void pivotCamera(int angle); // rotates the camera
-void addPivotCamera(int angle); // adds to the camera's current rotation
-void shakeCamera(float intensity); // shakes the camera
-void zoomCamera(Vector3 V); // makes the camera larger
-void addCameraDepth(int X); // increases the maximum depth that the camera can see
-void setCameraDepth(int X); // sets the maximum depth that the camera can see
-void moVectoramera(Vector3 V); // moves the camera
+void setCameraFlip(bool x, bool y); // true: Flipped, false: Normal
+void flipCamera(bool x, bool y); // true: Toggle, false: Leave it
+void pivotCamera(int angle); // Set camera's rotation
+void addPivotCamera(int angle); // Adds to the camera's current rotation
+void shakeCamera(float intensity); //Shakes the camera
+void zoomCamera(Vector3 v); // Changes the camera scale
+void moveCamera(Vector3 v); // Moves the camera in a certain offset
 ```
 
 To print the camera's view you can use the following function
