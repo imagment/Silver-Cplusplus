@@ -3,7 +3,7 @@
 ## Function prototype
 
 ```cpp
-Vector3 Silver::getLocation(int id);
+Vector3 getLocation(int id);
 ```
 
 ## Implementation
