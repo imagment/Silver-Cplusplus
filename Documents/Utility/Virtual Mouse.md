@@ -19,7 +19,6 @@ VMouse, pronounced as "virtual mouse," is a utility provided by Silver C++ that 
 ## Functions
 ```cpp
 void Silver::Mouse::startVMouse(int l, int r, int u, int d, int c) {
-
   Silver::Camera::hideMouse = false;
   if (VMouse.load())
     return;
@@ -46,7 +45,7 @@ bool Silver::Mouse::isMouse() {
 ## Function explanation
 `startMouse` : Starts the virtual mouse. It needs five parameters (`int l, int r, int u, int d, int c`) which is the 5 ascii codes for the key to move/click the mouse pointer
 `stopVMouse` : Stops the virtual mouse
-`isMouse` : Check if the last key press is the key for clicking the mouse
+`wasMouse` : Check if the last key press is the key for clicking the mouse
 
 ## Other members
 ```cpp
