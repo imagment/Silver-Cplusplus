@@ -38,5 +38,5 @@ They both return a vector of mesh that is in that location.
 ## Example Usage
 ```
 int k = Silver::place("player", 0, Vec3(10,10,0));
-mesh playerMesh = Silver::getMeshValuesAt3(Vec3(10,10,0));
+mesh playerMesh = Silver::getMeshValuesAt3(Vec3(10,10,0))[0];
 ```
