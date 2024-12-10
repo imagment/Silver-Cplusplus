@@ -2,8 +2,10 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
+#include <chrono>
 
 using namespace std;
+using namespace std::chrono;
 
 // The Keyboard namespace
 namespace Silver {
@@ -12,7 +14,12 @@ const int upKey = 65, downKey = 66, leftKey = 68, rightKey = 67,
           escapeKey = 27; // ASCII codes keys that are frequently used
 
 char keyBuffer; // The most recently pressed key
+char upKeyBuffer;
 bool caseSensitive = true;
+bool recieved = true;
+bool upRecieved = true;
+int holdThreshold = 512;
+steady_clock::time_point lastKeyPressTime; // To track the last key press time
 }; // namespace Keyboard
 }; // namespace Silver
 
@@ -38,15 +45,29 @@ char Silver::Keyboard::getKey() {
   tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
   fcntl(STDIN_FILENO, F_SETFL, oldf);
 
-  // Process input and return
+  // If a key is pressed, reset the last key press time
   if (ch != EOF) {
+    lastKeyPressTime = steady_clock::now(); // Update the time of last key press
+
     if (!Keyboard::caseSensitive && ch >= 'a' && ch <= 'z')
       ch += 'A' - 'a';
-    keyBuffer = ch;
+    
+    if(keyBuffer != ch) {
+      upKeyBuffer = keyBuffer;
+      keyBuffer = ch;
+      recieved = false;
+      upRecieved = false;
+    }
     return ch;
   }
 
-  keyBuffer = '\0';
+  if (duration_cast<milliseconds>(steady_clock::now() - lastKeyPressTime).count() >= holdThreshold) {
+    recieved = false;
+    upRecieved = false;
+    upKeyBuffer = keyBuffer;
+    keyBuffer = '\0';
+  }
+
   return '\0';
 }
 
@@ -62,5 +83,21 @@ bool Silver::Keyboard::isKey(int key) {
   }
 
   // If not, return false
+  return false;
+}
+
+bool Silver::Keyboard::isKeyDown(int key) {
+  if (isKey(key) && !recieved) {
+    recieved = true;
+    return true;
+  }
+  return false;
+}
+
+bool Silver::Keyboard::isKeyUp(int key) {
+  if (upKeyBuffer == key && !upRecieved) {
+    upRecieved = true;
+    return true;
+  }
   return false;
 }
