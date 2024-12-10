@@ -430,7 +430,7 @@ extern std::vector<std::string> bottomText;
 extern bool sideLimit;
 extern bool topDownLimit;
 extern bool printSpaces;
-extern bool absoluteAlign;
+
 extern int topAlign, bottomAlign, leftAlign, rightAlign;
 extern bool markOutOfBounds;
 extern std::string out_rep;
@@ -551,12 +551,22 @@ std::vector<mesh> getMeshValuesAt3(Vector3 pos);
 std::vector<mesh> getMeshValuesAt2(Vector2 pos);
 
 namespace Keyboard {
+
+// Constants for frequently used keys
 extern const int upKey, downKey, leftKey, rightKey, escapeKey;
-extern char keyBuffer;
-char getKey();
-bool isKey(int Key);
-extern bool caseSensitive;
+
+// Function prototypes
+char getKey();                          // Retrieves the most recently pressed key
+bool isKey(int key);                     // Checks if a key is the most recently pressed key
+bool isKeyDown(int key);                 // Checks if a key is currently pressed
+bool isKeyUp(int key);                   // Checks if a key is currently released
+extern int holdThreshold ;
+
+extern char keyBuffer;                   // Holds the most recently pressed key
+extern bool caseSensitive;               // Flag to indicate if case-sensitivity is enabled
+
 }; // namespace Keyboard
+
 
 }; // namespace Silver
 void startLoading();
