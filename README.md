@@ -1,5 +1,7 @@
 # Silver C++ Developer Documentation
 
+![Static Badge](https://img.shields.io/badge/:badgeContent)
+
 ## Index
 - [Vectors](#Vectors)
 - [Functions](#functions)
