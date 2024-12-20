@@ -11,57 +11,6 @@ namespace Silver {
     }; 
 }; 
 ```
-## Functions
-```cpp
-char Silver::Keyboard::getKey() {
-  struct termios oldt, newt;
-  int ch;
-  int oldf;
-
-  // Save and modify terminal settings for non-blocking input
-  tcgetattr(STDIN_FILENO, &oldt);
-  newt = oldt;
-  newt.c_lflag &= ~(ICANON | ECHO);
-  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
-  // Set non-blocking mode
-  oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-  fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-  // Get input character
-  ch = getchar();
-
-  // Restore terminal settings
-  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-  fcntl(STDIN_FILENO, F_SETFL, oldf);
-
-  // Process input and return
-  if (ch != EOF) {
-    if (!Keyboard::caseSensitive && ch >= 'a' && ch <= 'z') 
-      ch += 'A' - 'a';
-    keyBuffer = ch;
-    return ch;
-  }
-  
-  keyBuffer = '\0';
-  return '\0';
-}
-
-bool Silver::Keyboard::isKey(int key) {
-  // Get the most recently pressed key and process it
-  if (!Keyboard::caseSensitive && key >= 'a' && key <= 'z') {
-    key -= 'a' - 'A';
-  }
-  
-  // If 'key' is the recently pressed key, return true
-  if (keyBuffer == key) {
-    return true;
-  }
-  
-  // If not, return false
-  return false;
-}
-```
 
 ## Function explanation
 `getKey`: Retrieves a key input, stores it in the `keyBuffer`, and returns the updated value of the `keyBuffer`. <br>
@@ -77,12 +26,12 @@ The keyBuffer variable stores the value of the most recently pressed key.
 ```cpp
 const int upKey = 65, downKey = 66, leftKey = 68, rightKey = 67, escapeKey = 27;
 ```
-These five constants represent the ASCII codes for commonly used keyboard inputs. They are arrow keys and escape keys.
+These five constants represent the ASCII codes for commonly used keyboard inputs: arrow keys and escape keys.
 
 ```cpp
 bool caseSensitive = true;
 ```
-Determines whether the system treats lowercase and uppercase letters as the same (false) or different (true). For instance, when `caseSensitive` is true, 's' and 'S' keys are treated as different keys.
+Determines whether the system treats lowercase and uppercase letters as the same (false) or different (true). For instance, when `caseSensitive` is true, the 's' and 'S' keys are treated as different.
 
 
 ## Warning
