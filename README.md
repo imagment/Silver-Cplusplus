@@ -1,6 +1,6 @@
 # Silver C++ Developer Documentation
 
-![Static Badge](https://img.shields.io/badge/:badgeContent)
+[![Discord](https://img.shields.io/badge/Discord-LoTGD-blue?logo=discord)](https://discord.gg/72TbP8G69k)
 
 ## Index
 - [Vectors](#Vectors)
