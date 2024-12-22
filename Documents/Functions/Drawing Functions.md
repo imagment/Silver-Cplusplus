@@ -1,7 +1,7 @@
 # Drawing functions 
 
 ## Function Prototypes
-```
+```cpp
 void draw(Vector3 pos, std::string c);
 void Line(Vector3 start, Vector3 end, std::string c);
 void Rectangle(Vector3 topLeft, int width, int height, std::string c);
