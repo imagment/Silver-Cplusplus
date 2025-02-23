@@ -1,5 +1,6 @@
 # Silver C++ Developer Documentation
-
+![GitHub License](https://img.shields.io/github/license/imagment/Silver-Cplusplus)
+![GitHub Release](https://img.shields.io/github/v/release/imagment/Silver-Cplusplus)
 [![Discord](https://img.shields.io/badge/Discord-LoTGD-blue?logo=discord)](https://discord.gg/72TbP8G69k)
 
 ## Index
