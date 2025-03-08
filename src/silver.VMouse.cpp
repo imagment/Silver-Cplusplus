@@ -1,4 +1,6 @@
 #include "silver.hpp"
+#include "silver.VMouse.hpp"
+
 #include <atomic>
 #include <mutex>
 #include <thread>
@@ -8,56 +10,45 @@ using namespace std;
 atomic<bool> VMouse = false;
 mutex mouseMutex;
 
-namespace Silver {
-namespace Mouse {
-
 int mouseKey;
 int cursorPositionX = 0;
 int cursorPositionY = 0;
-std::string mouseIcon = "🖱️";
+std::string mouseIcon = "O";
 bool hideMouse = false;
-}; // namespace Mouse
-}; // namespace Silver
-void VMouseOn(int l, int r, int u, int d, int c) {
+
+void VMouseOn(int leftKey, int rightKey, int upKey, int downKey, int clickKey) {
   while (VMouse.load()) {
-    char det = Silver::Keyboard::getKey();
-
-    {
-
-      lock_guard<mutex> lock(mouseMutex);
-      if (det == l) {
-        Silver::Mouse::cursorPositionX--;
-      } else if (det == r) {
-        Silver::Mouse::cursorPositionX++;
-      } else if (det == u) {
-        Silver::Mouse::cursorPositionY--;
-      } else if (det == d) {
-        Silver::Mouse::cursorPositionY++;
-      } else if (det == c) {
-      }
+    lock_guard<mutex> lock(mouseMutex);
+    if (IsKey(leftKey)) {
+      cursorPositionX--;
+    } else if (IsKey(rightKey)) {
+      cursorPositionX++;
+    } else if (IsKey(upKey)) {
+      cursorPositionY--;
+    } else if (IsKey(downKey)) {
+      cursorPositionY++;
     }
   }
 }
 
-void Silver::Mouse::startVMouse(int l, int r, int u, int d, int c) {
-
+void StartVMouse(int leftKey, int rightKey, int upKey, int downKey, int clickKey) {
   hideMouse = false;
   if (VMouse.load())
     return;
 
   VMouse.store(true);
-  mouseKey = c;
-  thread vmouseThread(VMouseOn, l, r, u, d, c);
+  mouseKey = clickKey;
+  thread vmouseThread(VMouseOn, leftKey, rightKey, upKey, downKey, clickKey);
   vmouseThread.detach();
 }
 
-void Silver::Mouse::stopVMouse() {
+void StopVMouse() {
   hideMouse = true;
   VMouse.store(false);
 }
 
-bool Silver::Mouse::wasMouseClicked() {
-  if (Silver::Keyboard::keyBuffer == mouseKey) {
+bool WasMouseClicked() {
+  if (IsKey(mouseKey)) {
     return true;
   }
   return false;
