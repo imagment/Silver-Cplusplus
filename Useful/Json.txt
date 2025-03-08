@@ -1,7 +1,0 @@
-The nlohmann/json library for C++ is a single-header file that provides an easy-to-use interface for working with JSON data.
-It allows developers to parse, serialize, and manipulate JSON objects with intuitive syntax that resembles using maps and vectors in C++.
-The library handles complex JSON structures, including nested arrays and objects,
-and offers robust error handling. Additionally, it supports various C++ standard features like iterators,
-making it easy to traverse and query JSON data effectively.
-
-You can find more details and download the header file on its GitHub page: https://github.com/nlohmann/json
