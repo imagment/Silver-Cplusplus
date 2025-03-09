@@ -1203,7 +1203,7 @@ void ApplyFunction(const std::vector<int> &ids, std::function<void(int)> func,
   for (int obj : ids) {
     // Capture variables for the lambda
     auto task = [obj, func, mode, key, pos]() mutable {
-      while (isAlive(obj)) {
+      while (IsAlive(obj)) {
         if (mode == 'k' || mode == 'm' || mode == 'c' || mode == 'C') {
           while (true) {
             if (IsKey(key)) {

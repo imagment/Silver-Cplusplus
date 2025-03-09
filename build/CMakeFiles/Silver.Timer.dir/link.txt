@@ -1,0 +1,2 @@
+/usr/bin/ar qc libSilver.Timer.a CMakeFiles/Silver.Timer.dir/src/silver.Timer.cpp.o
+/usr/bin/ranlib libSilver.Timer.a
