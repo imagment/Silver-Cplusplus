@@ -1,162 +1,261 @@
 #ifndef SILVER_HPP
 #define SILVER_HPP
-#include <variant>
 
-#include <map>
+// Project-specific headers
+#include "silver.Fluid.hpp"
+#include "silver.Keyboard.hpp"
+#include "silver.Music.hpp"
+#include "silver.Threading.hpp"
+#include "silver.Timer.hpp"
+#include "silver.VMouse.hpp"
+#include "smath.hpp"
 
-#include <string>
+// Third-party libraries
+#include "miniaudio.h"
 
-#include <iterator>
-
-#include <condition_variable>
-
-#include <memory>
-
-#include <thread>
-
+// Standard library headers
+#include <algorithm>
+#include <atomic>
+#include <fcntl.h>
 #include <functional>
-
+#include <iostream>
+#include <iterator>
 #include <locale>
-
+#include <map>
+#include <memory>
 #include <numeric>
-
-#include <queue>
+#include <set>
+#include <sstream>
+#include <string>
+#include <thread>
 #include <unordered_map>
 
-#include <random>
+#include <variant>
 
-constexpr int all_numbers = -1;
-constexpr int immediate = -1;
-constexpr int infinity = -1;
-constexpr int ui_c = 1048576;
+#define until(condition)                                                       \
+  {                                                                            \
+    while (1) {                                                                \
+      if (condition)                                                           \
+        break;                                                                 \
+    }                                                                          \
+  }
 
-class Vector3 {
+class Actor; // Forward declaration
+
+using World = std::vector<Actor*>;
+extern Rect StageArea;
+extern std::map<std::string, Actor> Prefabs; // A collection to store pre-made objects
+extern World Workspace;
+extern World killedSprites;
+extern const World emptyWorld;
+
+extern bool debugMode;
+
+class Component {
+protected:
+  Actor *parent; // Keeping it lowercase as intended
+
 public:
-  int x, y, z;
+  explicit Component(Actor *m)
+      : parent(m) {} // Ensure parent is always initialized
+  virtual ~Component() = default;
 
-  // Constructors
-  constexpr Vector3(int x_ = 0, int y_ = 0, int z_ = 0) : x(x_), y(y_), z(z_) {}
+  virtual void Update(float deltaTime) = 0; // Pure virtual function
 
-  // Conversion to Vector2 (cuts z)
-  operator class Vector2() const;
-
-  // Arithmetic operators
-  Vector3 operator+(const Vector3 &other) const {
-    return {x + other.x, y + other.y, z + other.z};
-  }
-
-  Vector3 operator-(const Vector3 &other) const {
-    return {x - other.x, y - other.y, z - other.z};
-  }
-
-  Vector3 operator*(int scalar) const {
-    return {x * scalar, y * scalar, z * scalar};
-  }
-
-  Vector3 &operator+=(const Vector3 &other) {
-    x += other.x;
-    y += other.y;
-    z += other.z;
-    return *this;
-  }
-
-  Vector3 &operator-=(const Vector3 &other) {
-    x -= other.x;
-    y -= other.y;
-    z -= other.z;
-    return *this;
-  }
-
-  Vector3 &operator*=(int scalar) {
-    x *= scalar;
-    y *= scalar;
-    z *= scalar;
-    return *this;
-  }
-
-  // Comparison operators
-  bool operator==(const Vector3 &other) const {
-    return x == other.x && y == other.y && z == other.z;
-  }
-
-  bool operator!=(const Vector3 &other) const { return !(*this == other); }
-
-  bool operator<(const Vector3 &other) const {
-    return std::tie(x, y, z) < std::tie(other.x, other.y, other.z);
-  }
-
-  // Static methods for common directions
-  static constexpr Vector3 up() { return {0, -1, 0}; }
-  static constexpr Vector3 down() { return {0, 1, 0}; }
-  static constexpr Vector3 left() { return {-1, 0, 0}; }
-  static constexpr Vector3 right() { return {1, 0, 0}; }
-  static constexpr Vector3 forward() { return {0, 0, 1}; }
-  static constexpr Vector3 backward() { return {0, 0, -1}; }
-  static constexpr Vector3 zero() { return {0, 0, 0}; }
+  Actor *GetParent() const { return parent; } // Safe accessor
 };
 
-class Vector2 {
+class Transform : public Component {
 public:
-  int x, y;
-  constexpr Vector2(int x_ = 0, int y_ = 0) : x(x_), y(y_) {}
+  Vector3 position = {0.0f, 0.0f, 0.0f};
 
-  Vector2(const Vector3 &vec3) : x(vec3.x), y(vec3.y) {}
+  double rotation = 0.0f;
+  Vector3 scale = {1.0f, 1.0f, 1.0f};
 
-  operator Vector3() const { return Vector3(x, y, 0); }
-
-  // Arithmetic operators
-  Vector2 operator+(const Vector2 &other) const {
-    return {x + other.x, y + other.y};
+  Transform() = default;
+  explicit Transform(Actor *m) : Component(m) {}
+  void Translate(Vector3 offset);
+  // Provide an implementation for the update method
+  void Update(float deltaTime) override {
+    // Add behavior for updating the Transform (e.g., moving, rotating, etc.)
   }
-
-  Vector2 operator-(const Vector2 &other) const {
-    return {x - other.x, y - other.y};
-  }
-
-  Vector2 operator*(int scalar) const { return {x * scalar, y * scalar}; }
-
-  Vector2 &operator+=(const Vector2 &other) {
-    x += other.x;
-    y += other.y;
-    return *this;
-  }
-
-  Vector2 &operator-=(const Vector2 &other) {
-    x -= other.x;
-    y -= other.y;
-    return *this;
-  }
-
-  Vector2 &operator*=(int scalar) {
-    x *= scalar;
-    y *= scalar;
-    return *this;
-  }
-
-  bool operator==(const Vector2 &other) const {
-    return x == other.x && y == other.y;
-  }
-
-  bool operator!=(const Vector2 &other) const { return !(*this == other); }
-
-  bool operator<(const Vector2 &other) const {
-    return std::tie(x, y) < std::tie(other.x, other.y);
-  }
-
-  static constexpr Vector2 up() { return {0, -1}; }
-  static constexpr Vector2 down() { return {0, 1}; }
-  static constexpr Vector2 left() { return {-1, 0}; }
-  static constexpr Vector2 right() { return {1, 0}; }
-  static constexpr Vector2 zero() { return {0, 0}; }
 };
 
-inline constexpr Vector3 markAsUI{1048576, 1048576, 0};
+class SpriteRenderer : public Component {
+public:
+  SpriteRenderer() = default;
+  explicit SpriteRenderer(Actor *m) : Component(m) {}
+  std::string shape = "";
+  Vector2 pivot = Vector2(0, 0);
+  bool isTransparent = false;
+  Vector2 GetSize();
+  
+  std::tuple<int, int, int, int> GetPivotBounds();
+  std::string GetCellString(int column, int line);
+  void Update(float deltaTime) override {
+    
+  }
+private:
+  Vector2 RotatePoint(int column, int line); //Helper function to rotate around the pivot
+};
 
-struct components {
+class Actor {
+public:
+  std::string name;
 
-  std::string signMessage;
-  std::string readerKey;
+  template <typename T, typename... Args>
+  T *AddComponent(Args &&...args) {
+      static_assert(std::is_base_of<Component, T>::value,
+                    "T must inherit from Component");
+      if (this == nullptr) {
+          std::cerr << "Error: Attempting to add component to a null Actor."
+                    << std::endl;
+          return nullptr;
+      }
 
+      // Check if a component of type T already exists
+      for (const auto &comp : objectComponents) {
+          if (std::dynamic_pointer_cast<T>(comp)) {
+              std::cerr << "Error: Component of type " << typeid(T).name()
+                        << " already exists." << std::endl;
+              return nullptr;
+          }
+      }
+
+      // Create and store the component
+      T *component = new T(this, std::forward<Args>(args)...);
+      objectComponents.push_back(std::shared_ptr<T>(component));
+
+      return component;
+  }
+
+
+  template <typename T> bool RemoveComponent() {
+    static_assert(std::is_base_of<Component, T>::value,
+                  "T must inherit from Component");
+
+    // Prevent removal of Transform component
+    if constexpr (std::is_same_v<T, Transform>) {
+      return false; // Transform cannot be removed
+    }
+
+    // Find and remove the component
+    auto it =
+        std::remove_if(objectComponents.begin(), objectComponents.end(),
+                       [](const std::shared_ptr<Component> &component) {
+                         return dynamic_cast<T *>(component.get()) != nullptr;
+                       });
+
+    if (it != objectComponents.end()) {
+      objectComponents.erase(
+          it, objectComponents.end()); // Remove all matched components
+      return true;                     // Removal successful
+    }
+
+    return false; // Removal failed (no component of the specified type found)
+  }
+  
+  // Get a component of a specific type
+  template <typename T> T *GetComponent() const {
+    for (const auto &component : objectComponents) {
+      if (auto castedComponent = std::dynamic_pointer_cast<T>(component)) {
+        return castedComponent.get();
+      }
+    }
+    return nullptr;
+  }
+
+  Actor() { AddComponent<Transform>(); }
+
+  // Constructor that takes only a Actor name
+  Actor(std::string ActorName) : name(ActorName) {
+    AddComponent<Transform>(); // Add Transform component
+  }
+
+  // Constructor that takes both a Actor name and a shape
+  Actor(std::string ActorName, std::string shape) : name(ActorName) {
+    AddComponent<Transform>(); // Add Transform component
+    SpriteRenderer *spriteRenderer =
+        AddComponent<SpriteRenderer>(); // Add SpriteRenderer component
+    spriteRenderer->shape = shape;      // Set the shape from the parameter
+  }
+  
+  // Constructor that takes both a Actor name and a shape
+  Actor(std::string ActorName, std::string shape, Vector3 position) : name(ActorName) {
+    AddComponent<Transform>()->position = position; // Add Transform component
+    SpriteRenderer *spriteRenderer =
+        AddComponent<SpriteRenderer>(); // Add SpriteRenderer component
+    spriteRenderer->shape = shape;      // Set the shape from the parameter
+  }
+
+  // Constructor that takes both a Actor name and a shape
+  Actor(std::string ActorName, Vector3 position) : name(ActorName) {
+    AddComponent<Transform>()->position = position; // Add Transform component
+  }
+
+
+  // Set parent Actor
+  void SetParent(Actor *parentActor) {
+    parent = parentActor;
+    parent-> AddChild(this);
+  }
+
+  // Add a child Actor
+  void AddChild(Actor *childActor) { children.push_back(childActor); }
+
+  // Get the parent Actor
+  Actor *GetParent() const { return parent; }
+
+  // Get the child Actores
+  const std::vector<Actor *> &GetChildren() const { return children; }
+
+  unsigned int number = 0;
+  std::map<std::string, int> intValues;
+  std::map<std::string, std::string> stringValues;
+  std::string tag;
+
+  // Other member functions
+
+  void AddObject();
+  void RemoveObject();
+  
+  int GetInstanceID() {
+    return objectID;
+  }
+private:
+  int objectID;
+  std::vector<std::shared_ptr<Component>> objectComponents;    // Components of this Actor
+  Actor *parent = nullptr; // Parent Actor
+  std::vector<Actor *> children;
+};
+
+class Animation {
+public:
+  std::vector<std::string> animation;
+  void LoadAnimationFromFile(const std::string filename);
+  double fps;
+  int transition;
+  bool immediateTransition;
+};
+
+class AnimationManager : public Component {
+public:
+  void SwitchAnimation(Animation* anim);
+  void StopAnimation();
+  void PauseAnimation();
+  void ResumeAnimation();
+  
+  void Update();
+private:
+  Animation* playing = nullptr;
+  Animation* nextUp = nullptr;
+  int currentFrame = 0;
+};
+
+#include "silver.Camera.hpp"
+
+class Fluid : public Component {
+public:
   bool isFluid = false;
   double diffusionSpeed = 1.0;
   int maximumDistance = 5;
@@ -165,163 +264,25 @@ struct components {
   int fluidRoot = -1;
   int fluidParent = -1;
   double drySpeed = 100.0;
-  double pressure = 1.0;
   bool isDead = false;
-
-  bool followPhysics = false;
-  double mass = 1.0;
-  double dragCoefficient = 1.225;
-  double angularDrag = 0.01;
-  Vector3 Velocity = {0, 0, 0};
-  double angularVelocity = 0.0;
-  double position = 0.0;
-  double angularPosition = 0.0;
-  double drag = 0.0;
-  bool gravity = false;
-  bool isKinematic = false;
-  double destroyForce = -1.0;
-
-  bool canCollide = false;
-
-  bool isUI = false;
-
-  std::string animationBuffer;
-  int playingID = -1;
+  void Update() {
+    ThreadedFlow(parent->GetInstanceID());
+    globalCullingThread(parent->GetInstanceID());
+  }
+private:
+  void globalCullingThread(int rootID);
+  void ThreadedFlow(int rootID);
 };
 
-class mesh;
-class prefab {
-public:
-  std::string name;
-  std::string shape;
-  std::map<std::string, int> intValues;
-  std::map<std::string, std::string> stringValues;
-  std::vector<std::string> tags;
-  bool isTransparent;
-  components comp;
-
-  prefab(const std::string n = "", const std::string shp = "",
-         bool transp = false)
-      : name(n), shape(shp), isTransparent(transp) {}
-
-  prefab(const mesh &msh);
+class UI : public Component {
+  
+  void Update() {}
 };
 
-class mesh {
-public:
-  Vector3 position;
-  std::string name;
-  std::string shape;
-  int number;
-  std::map<std::string, int> intValues;
-  std::map<std::string, std::string> stringValues;
-  std::vector<std::string> tags;
-  bool isTransparent;
-  components comp;
+std::vector<int> Duplicate(const std::variant<int, std::vector<int>> &IDs);
+void SetNonBlockingMode();
+Actor *GetActor(int objID);
 
-  mesh() : position(), number(0), isTransparent(false) {}
-
-  mesh(const prefab &pfb)
-      : position(), name(pfb.name), shape(pfb.shape), number(0),
-        intValues(pfb.intValues), stringValues(pfb.stringValues),
-        tags(pfb.tags), isTransparent(pfb.isTransparent), comp(pfb.comp) {}
-
-  void setTransparence(bool value);
-  void translate2(Vector2 offset);
-  void translate3(Vector3 offset);
-  Vector3 getPos2();
-  Vector3 getPos3();
-};
-
-using World = std::map<int, mesh>;
-
-struct zone {
-public:
-  std::variant<std::tuple<int, int, int, int>,
-               std::vector<std::tuple<int, int, int, int>>>
-      shape;
-
-  zone(std::variant<std::tuple<int, int, int, int>,
-                    std::vector<std::tuple<int, int, int, int>>>
-           shape) {}
-};
-
-namespace Silver {
-namespace {
-struct ThreadInfo {
-  std::thread t;
-  bool paused = false;
-  bool stop = false;
-  std::condition_variable cv;
-  std::mutex mtx;
-
-  ThreadInfo() = default;
-  ThreadInfo(const ThreadInfo &) = delete;
-  ThreadInfo &operator=(const ThreadInfo &) = delete;
-};
-extern std::map<std::string, std::shared_ptr<ThreadInfo>> threads;
-
-extern std::mutex thread_mutex;
-extern std::vector<std::thread> activeThreads;
-}; 
-extern Vector2 WorldRangeStart, WorldRangeEnd;
-bool isInZone(const zone &z, Vector3 pos);
-namespace UI {
-
-void changeToUI(std::variant<std::vector<int>, int> workspaceIDs);
-int placeUI(const std::string objectName, int number, Vector3 pos);
-}; 
-
-namespace Fluid {
-
-void Liquify(const std::variant<int, std::vector<int>> &IDs,
-             double diffusionSpeed, int maximumDistance);
-void Unliquify(const std::variant<int, std::vector<int>> &IDs);
-void Unsolidify(const std::variant<int, std::vector<int>> &IDs);
-void Solidify(const std::variant<int, std::vector<int>> &IDs);
-}; // namespace Fluid
-std::vector<int> duplicate(const std::variant<int, std::vector<int>> &IDs);
-namespace Animation {
-
-void applyAnimationRaw(std::variant<int, std::vector<int>> objID,
-                       std::vector<std::string> animation, float fps,
-                       int transition);
-void applyAnimation(std::variant<int, std::vector<int>> objID,
-                    const std::string filename);
-void stopAnimation(std::variant<int, std::vector<int>> objID, bool reset);
-}; // namespace Animation
-
-namespace Particle {
-
-void applyParticleComponent(int objID, const std::string objectName,
-                            Vector3 pos, int radius, int lifeTime, double speed,
-                            int quantity, int particleLifetime);
-};
-class Physics {};
-void saveChunk(Vector3 range1, Vector3 range2, const std::string fileName,
-               const std::string mode);
-namespace Drawing {
-
-void draw(Vector3 pos, std::string c);
-void Line(Vector3 start, Vector3 end, std::string c);
-void Rectangle(Vector3 topLeft, int width, int height, std::string c);
-void Circle(Vector3 center, int radius, std::string c);
-void CircleHollow(Vector3 center, int radius, std::string c);
-void RectangleHollow(Vector3 topLeft, int width, int height, std::string c);
-void Oval(Vector3 center, int radiusX, int radiusY, std::string c);
-void OvalHollow(Vector3 center, int radiusX, int radiusY, std::string c);
-
-void sprayRectangle(int spawns, Vector3 center, Vector3 scale, std::string c);
-void sprayOval(int spawns, Vector3 center, Vector3 scale, std::string c);
-void spray(int spawns, Vector3 center, int range, std::string c);
-void sprayLine(int spawns, Vector3 start, Vector3 end, std::string c);
-}; // namespace Drawing
-mesh *getMesh(int objID);
-zone buildZone(std::variant<std::tuple<int, int, int, int>,
-                            std::vector<std::tuple<int, int, int, int>>>
-                   shape);
-void setObjectPosition(const std::variant<int, std::vector<int>> objectID,
-                       Vector3 pos);
 void glideObjectPositionToTarget(
     const std::variant<int, std::vector<int>> objectIDs, int spriteID,
     float speed);
@@ -332,19 +293,12 @@ void sprayRectangle(int spawns, Vector3 center, Vector3 scale, std::string name,
 void sprayOval(int spawns, Vector3 center, Vector3 scale, std::string name,
                int number);
 void spray(int spawns, Vector3 center, int range, std::string name, int number);
-bool isAlive(int obj);
+bool IsAlive(int obj);
 void sprayLine(int spawns, Vector3 start, Vector3 end, std::string name,
                int number);
-int placeObject(const std::string objectName, int number, Vector3 pos);
 
-void createPrefab(const std::string name, const std::string shape);
-
-void moveObjectXY(const std::variant<int, std::vector<int>> objectID,
-                  Vector2 pos);
-void moveObjectX(const std::variant<int, std::vector<int>> objectID,
-                 int x_offset);
-void moveObjectY(const std::variant<int, std::vector<int>> objectID,
-                 int y_offset);
+void SetCursorVisibility(bool value);
+Actor* InstanceIDToActor (int ID);
 
 void setObjectRandom(const std::variant<int, std::vector<int>> objectID,
                      const std::pair<int, int> &xRange,
@@ -358,11 +312,11 @@ void RectangleHollow(const std::string name, int number, Vector3 topLeft,
 void CircleHollow(const std::string name, int number, Vector3 center,
                   int radius);
 void Circle(const std::string name, int number, Vector3 center, int radius);
-void debug(const std::string message, const std::string mode);
+void Debug(const char *fmt, ...);
 void Line(const std::string name, int number, Vector3 start, Vector3 end);
 
 void Oval(const std::string name, int number, Vector3 center, Vector3 scale);
-int getRandom(int min, int max);
+int GetRandom(int min, int max);
 void OvalHollow(const std::string name, int number, Vector3 center,
                 Vector3 scale);
 void setObjectX(const std::variant<int, std::vector<int>> objectID,
@@ -389,191 +343,32 @@ std::vector<Vector3> getLinePoints(Vector3 start, Vector3 end);
 std::vector<Vector3> getOvalPoints(Vector3 center, Vector3 scale);
 std::vector<Vector3> getOvalHollowPoints(Vector3 center, Vector3 scale);
 
-void removeScript(const std::string objectName,
-                  const std::string scriptToRemove);
 void glideObjectX(const std::variant<int, std::vector<int>> &ids, int x_offset,
                   long long speed, ...);
 void glideObjectY(const std::variant<int, std::vector<int>> &ids, int y_offset,
                   long long speed, ...);
 
-void setWorldBounds(Vector2 start, Vector2 end);
-std::vector<int> seekTag(const std::string tag);
-void applyTag(const std::vector<int> &ids, const std::string tag);
-void setRawMode(bool value);
+std::vector<Actor*> FindObjectsWithTag(const std::string tag);
+Actor* FindObjectWithTag(const std::string tag);
 
-std::pair<int, int> getConsoleSize();
-Vector2 getConsoleCenter();
+void SetRawMode(bool value);
+
+Vector2 GetConsoleSize();
+Vector2 GetConsoleCenter();
 void walk(const std::string name, std::variant<std::vector<int>, int> number,
           int steps, int direction);
 
-namespace Mouse {
-void stopVMouse();
-void startVMouse(int l, int r, int u, int d, int c);
-extern int mouseKey;
-extern int cursorPositionX;
-extern int cursorPositionY;
-extern std::string mouseIcon;
-extern bool hideMouse;
-bool wasMouseClicked();
-
-}; // namespace Mouse
-
-std::vector<std::string> getTag(int id);
-void setConsoleTitle(const std::string title);
-namespace Camera {
-
-extern std::string null_rep;
-extern std::vector<std::string> topText;
-extern std::vector<std::string> rightText;
-extern std::vector<std::string> leftText;
-extern std::vector<std::string> bottomText;
-extern bool sideLimit;
-extern bool topDownLimit;
-extern bool printSpaces;
-
-extern int topAlign, bottomAlign, leftAlign, rightAlign;
-extern bool markOutOfBounds;
-extern std::string out_rep;
-extern bool cutOutOfBounds;
-
-extern Vector2 CameraConsolePos;
-extern int anchor;
-
-extern Vector3 CameraPos;
-extern Vector3 CameraScale;
-extern int cameraRotation;
-extern bool isFlippedHorizontal, isFlippedVertical;
-extern int cellSize;
-extern bool isFirst;
-extern std::mutex bufferMutex;
-extern bool gridMode;
-extern bool fillMode;
-extern bool hideMouse;
-extern std::map<std::tuple<int, int>, std::string> lastFrame;
-void setCam2(Vector2 pos, Vector2 scale);
-void setCam3(Vector3 pos, Vector3 scale);
-
-void printCam();
-void flipCamera(bool x, bool y);
-Vector2 getScreenPosition(Vector3 pos);
-void setCameraFlip(bool x, bool y);
-void pivotCamera(int angle);
-void addPivotCamera(int angle);
-void shakeCameraOnce(float intensity);
-void shakeCamera(float intensity, int shakes, float delayBetweenShakes);
-void zoomCamera(Vector3 V);
-void addCameraDepth(int X);
-void cell(int c);
-void configCameraException(const std::string n);
-void setCameraDepth(int X);
-void moveCamera(Vector3 V);
-void startVideo(float FPS);
-void endVideo();
-void restartVideo(float FPS);
-void photo();
-
-std::vector<std::vector<std::string>> gPhoto();
-}; // namespace Camera
-void kill(std::variant<int, std::vector<int>> objIDs);
-void revive(std::variant<int, std::vector<int>> objIDs);
-void destroy(std::variant<int, std::vector<int>> objIDs);
-void gotoxy(int x, int y);
-int addObject(const std::string objectName, Vector3 pos);
-int put(const std::string objectName, Vector3 pos);
-int unoccupiedNumber(const std::string objectName);
-void createEmptyPrefab(const std::string name);
-
-std::vector<int> getObjectsAt3(Vector3 pos);
-std::vector<int> getObjectsAt2(Vector2 pos);
-
-namespace Threading {
-
-void tRun(std::function<void()> func);
-
-void dRun(std::function<void()> func, float time);
-
-void createThread(const std::string name, std::function<void()> func);
-void destroyThread(const std::string name);
-
-void stopAllThreads();
-
-void pauseThread(const std::string name);
-
-void resumeThread(const std::string name);
-}; // namespace Threading
-
-namespace Timer {
-void update(const std::string name);
-
-float getDeltaTime(const std::string name);
-
-void startTimer(const std::string name);
-
-void stopTimer(const std::string name);
-
-void resetTimer(const std::string name);
-
-long long getDuration(const std::string name);
-
-extern std::map<std::string, bool> running;
-extern std::map<std::string, long long> duration;
-extern std::map<std::string, std::chrono::high_resolution_clock::time_point>
-    startTime;
-extern std::map<std::string, std::chrono::high_resolution_clock::time_point>
-    lastTime;
-extern std::map<std::string, float> deltaTime;
-}; // namespace Timer
-
-namespace Scene {
-extern std::map<std::string, World> savedScenes;
-void saveCurrentWorld(const std::string name);
-void loadScene(const std::string name);
-void resetScene();
-}; // namespace Scene
-
-void clear();
-void clean(Vector3 first, Vector3 second);
+void SetConsoleTitle(const std::string title);
+void Destroy(Actor* actor);
+bool Gotoxy(int x, int y);
+double DeltaTime();
+void Clear();
 void loadChunk(const std::string file);
-void wait(int time);
-
-mesh getMeshValue(int objID);
-
-Vector3 getLocation(int id);
-
-double calculateDistance2(Vector2 first, Vector2 second);
-double calculateDistance3(Vector3 first, Vector3 second);
-
-void hold();
-std::vector<int> all();
-std::vector<int> findObjects(const std::string name,
-                             std::variant<std::vector<int>, int> number);
-std::vector<mesh> getMeshValuesAt3(Vector3 pos);
-std::vector<mesh> getMeshValuesAt2(Vector2 pos);
-
-namespace Keyboard {
-
-// Constants for frequently used keys
-extern const int upKey, downKey, leftKey, rightKey, escapeKey;
-
-// Function prototypes
-char getKey();                          // Retrieves the most recently pressed key
-bool isKey(int key);                     // Checks if a key is the most recently pressed key
-bool isKeyDown(int key);                 // Checks if a key is currently pressed
-bool isKeyUp(int key);                   // Checks if a key is currently released
-extern int holdThreshold ;
-
-extern char keyBuffer;                   // Holds the most recently pressed key
-extern bool caseSensitive;               // Flag to indicate if case-sensitivity is enabled
-
-}; // namespace Keyboard
+void Wait(int time);
+Actor GetActorValue(int objID);
 
 
-}; // namespace Silver
-void startLoading();
-extern World workspace;
+void Hold();
 
-extern World killedSprites;
-extern const World emptyWorld;
-extern std::map<const std::string, prefab> prefabrications;
 
 #endif

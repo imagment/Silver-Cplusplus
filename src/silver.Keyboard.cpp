@@ -1,102 +1,64 @@
+#include "silver.Keyboard.hpp"
 #include "silver.hpp"
 #include <fcntl.h>
-#include <termios.h>
+#include <iostream>
+#include <linux/input.h>
 #include <unistd.h>
-#include <chrono>
+#include <unordered_map>
 
-using namespace std;
-using namespace std::chrono;
+// Static variables
+static std::unordered_map<int, bool> keyStates; // Stores key states
+static std::unordered_map<int, bool> keyDownStates; // Tracks if a key was pressed down
+static std::unordered_map<int, bool> keyUpStates; // Tracks if a key was released
+static bool isInitialized = false;
+static int fd; // File descriptor for input device
 
-// The Keyboard namespace
-namespace Silver {
-namespace Keyboard {
-const int upKey = 65, downKey = 66, leftKey = 68, rightKey = 67,
-          escapeKey = 27; // ASCII codes keys that are frequently used
+// Initializes the keyboard input system
+void InitializeKeyboardModule() {
+  if (!isInitialized) {
+    SetNonBlockingMode();
 
-char keyBuffer; // The most recently pressed key
-char upKeyBuffer;
-bool caseSensitive = true;
-bool recieved = true;
-bool upRecieved = true;
-int holdThreshold = 512;
-steady_clock::time_point lastKeyPressTime; // To track the last key press time
-}; // namespace Keyboard
-}; // namespace Silver
+    isInitialized = true;
+  }
+}
 
-char Silver::Keyboard::getKey() {
-  struct termios oldt, newt;
-  int ch;
-  int oldf;
-
-  // Save and modify terminal settings for non-blocking input
-  tcgetattr(STDIN_FILENO, &oldt);
-  newt = oldt;
-  newt.c_lflag &= ~(ICANON | ECHO);
-  tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
-  // Set non-blocking mode
-  oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-  fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-  // Get input character
-  ch = getchar();
-
-  // Restore terminal settings
-  tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-  fcntl(STDIN_FILENO, F_SETFL, oldf);
-
-  // If a key is pressed, reset the last key press time
-  if (ch != EOF) {
-    lastKeyPressTime = steady_clock::now(); // Update the time of last key press
-
-    if (!Keyboard::caseSensitive && ch >= 'a' && ch <= 'z')
-      ch += 'A' - 'a';
-    
-    if(keyBuffer != ch) {
-      upKeyBuffer = keyBuffer;
-      keyBuffer = ch;
-      recieved = false;
-      upRecieved = false;
+// Polls events and updates states
+void PollEvents() {
+  struct input_event event;
+  while (read(fd, &event, sizeof(event)) > 0) {
+    if (event.type == EV_KEY) {
+      int key = event.code;
+      if (event.value == 1) { // Key press
+        keyStates[key] = true;
+        keyDownStates[key] = true;
+        keyUpStates[key] = false;
+      } else if (event.value == 2) { // Key hold
+        keyStates[key] = true;
+      } else if (event.value == 0) { // Key release
+        keyStates[key] = false;
+        keyDownStates[key] = false;
+        keyUpStates[key] = true;
+      }
     }
-    return ch;
   }
-
-  if (duration_cast<milliseconds>(steady_clock::now() - lastKeyPressTime).count() >= holdThreshold) {
-    recieved = false;
-    upRecieved = false;
-    upKeyBuffer = keyBuffer;
-    keyBuffer = '\0';
-  }
-
-  return '\0';
 }
 
-bool Silver::Keyboard::isKey(int key) {
-  // Get the most recently pressed key and process it
-  if (!Keyboard::caseSensitive && key >= 'a' && key <= 'z') {
-    key -= 'a' - 'A';
-  }
+// Checks if a key is pressed
+bool IsKey(int key) { return keyStates[key]; }
 
-  // If 'key' is the recently pressed key, return true
-  if (keyBuffer == key) {
-    return true;
-  }
-
-  // If not, return false
-  return false;
-}
-
-bool Silver::Keyboard::isKeyDown(int key) {
-  if (isKey(key) && !recieved) {
-    recieved = true;
+// Checks if a key is pressed down (once)
+bool IsKeyDown(int key) {
+  if (keyDownStates[key]) {
+    keyDownStates[key] = false; // Reset after processing
     return true;
   }
   return false;
 }
 
-bool Silver::Keyboard::isKeyUp(int key) {
-  if (upKeyBuffer == key && !upRecieved) {
-    upRecieved = true;
+// Checks if a key is released
+bool IsKeyUp(int key) {
+  if (keyUpStates[key]) {
+    keyUpStates[key] = false; // Reset after processing
     return true;
   }
   return false;

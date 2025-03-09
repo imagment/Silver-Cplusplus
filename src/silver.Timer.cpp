@@ -1,73 +1,60 @@
-#include "silver.hpp"
+#include "silver.Timer.hpp"
 #include <chrono>
-#include <iostream>
-#include <stdexcept>
-#include <string>
-#include <thread>
-#include <unordered_map>
 
-using namespace std;
+using namespace std::chrono;
 
-namespace Silver {
-namespace Timer {
+Timer::Timer() 
+    : isRunning(false), isPaused(false), accumulatedPausedTime(0) {}
 
-std::map<std::string, bool> running;
-std::map<std::string, long long> duration;
-std::map<std::string, std::chrono::high_resolution_clock::time_point> startTime;
-std::map<std::string, std::chrono::high_resolution_clock::time_point> lastTime;
-std::map<std::string, float> deltaTime;
-}; // namespace Timer
-
-}; // namespace Silver
-
-void Silver::Timer::resetTimer(const string name) {
-  running[name] = false;
-  duration[name] = 0;
+void Timer::Start() {
+    if (!isRunning) {
+        startTime = high_resolution_clock::now();
+        isRunning = true;
+        isPaused = false;
+        accumulatedPausedTime = 0;
+    }
 }
 
-long long Silver::Timer::getDuration(const string name) {
-
-  if (running.find(name) != running.end() && running.at(name) == true) {
-    auto currentTime = chrono::high_resolution_clock::now();
-    return duration.at(name) + chrono::duration_cast<chrono::milliseconds>(
-                                   currentTime - startTime.at(name))
-                                   .count();
-  }
-
-  if (duration.find(name) != duration.end()) {
-    return duration.at(name);
-  }
-
-  return 0;
+void Timer::Pause() {
+    if (isRunning && !isPaused) {
+        pauseTime = high_resolution_clock::now();
+        isPaused = true;
+    }
 }
 
-void Silver::Timer::startTimer(const string name) {
-
-  if (running.find(name) == running.end() || running.at(name) == false) {
-    startTime[name] = chrono::high_resolution_clock::now();
-    running[name] = true;
-  }
+void Timer::Resume() {
+    if (isPaused) {
+        resumeTime = high_resolution_clock::now();
+        accumulatedPausedTime += duration_cast<milliseconds>(resumeTime - pauseTime).count();
+        isPaused = false;
+    }
 }
 
-void Silver::Timer::stopTimer(const string name) {
-  if (running[name]) {
-    auto endTime = chrono::high_resolution_clock::now();
-    duration[name] += chrono::duration_cast<chrono::milliseconds>(
-                          endTime - startTime.at(name))
-                          .count();
-    running[name] = false;
-  }
+void Timer::Stop() {
+    if (isRunning) {
+        if (isPaused) {
+            Resume();
+        }
+        auto stopTime = high_resolution_clock::now();
+        totalDuration = duration_cast<milliseconds>(stopTime - startTime).count() - accumulatedPausedTime;
+        isRunning = false;
+    }
 }
 
-float Silver::Timer::getDeltaTime(const string name) {
-  return deltaTime.at(name);
+void Timer::Reset() {
+    isRunning = false;
+    isPaused = false;
+    totalDuration = 0;
+    accumulatedPausedTime = 0;
 }
 
-void Silver::Timer::update(const string name) {
-  auto currentTime = chrono::high_resolution_clock::now();
-
-  deltaTime[name] =
-      chrono::duration<float>(currentTime - lastTime.at(name)).count();
-
-  lastTime[name] = currentTime;
+long long Timer::GetElapsedTime() const {
+    if (isRunning) {
+        if (isPaused) {
+            return duration_cast<milliseconds>(pauseTime - startTime).count() - accumulatedPausedTime;
+        }
+        return duration_cast<milliseconds>(high_resolution_clock::now() - startTime).count() - accumulatedPausedTime;
+    }
+    return totalDuration;
 }
+
