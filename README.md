@@ -44,7 +44,7 @@ Windows is *not* supported currently. We are creating another version of Silver 
 - 🔢 **Math Module** – Built-in utilities for Vectors and Rects
 - 📝 **Code Style** – Written in C++17 using CamelCase and PascalCase notation for clarity and consistency.
 
-## Examples
+## Code Example
 ```
 #include "Silver.hpp"
 
