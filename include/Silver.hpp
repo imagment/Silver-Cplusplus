@@ -159,6 +159,7 @@ public:
   
   Vector2 GetSize();
   Vector2 GetPivot();
+  void alignShapeTo(double align);
   
   SpriteRenderer(const SpriteRenderer& other)
         : Component(other),
