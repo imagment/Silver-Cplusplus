@@ -368,7 +368,7 @@ void SpriteRenderer::setShape(std::string target) {
 }
 
 
-void SpriteRenderer::alignShape(double align) {
+void SpriteRenderer::alignShapeTo(double align) {
     if (align < 0.0) align = 0.0;
     if (align > 1.0) align = 1.0;
 
