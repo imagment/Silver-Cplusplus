@@ -21,7 +21,7 @@ unordered_map<int, thread> flowThreads;
 
 // Function Definitions
 void globalCullingThread(int rootID) {
-  int lastProcessedDepth = 0;
+ /* int lastProcessedDepth = 0;
   while (!stopGlobal) {
     lock_guard<mutex> lock(WorkspaceMutex);
 
@@ -87,13 +87,13 @@ void globalCullingThread(int rootID) {
 
       ++it;
     }
-  }
+  } */
 }
 
 
 
 void ThreadedFlow(int rootID) {
-  queue<pair<int, int>> flowQueue;
+  /* queue<pair<int, int>> flowQueue;
   {
     lock_guard<mutex> lock(WorkspaceMutex);
     auto actor = InstanceIDToActor(rootID);
@@ -181,11 +181,12 @@ void ThreadedFlow(int rootID) {
 
     if (!flowed)
       break;
-  }
+  } */
 }
 
 
 void stopAllFlowAndCulling() {
+/*
   stopGlobal = true;
 
   for (auto &[id, thread] : flowThreads) {
@@ -200,7 +201,7 @@ void stopAllFlowAndCulling() {
       thread.join();
     }
   }
-  cullingThreads.clear();
+  cullingThreads.clear(); */
 }
 
 
@@ -208,7 +209,7 @@ void stopAllFlowAndCulling() {
 
 
 void setAsFluidBlocker(const variant<int, vector<int>> &IDs) {
-  auto solidifyMesh = [&](int id) {
+  /* auto solidifyMesh = [&](int id) {
     if (InstanceIDToActor(id) != nullptr) {
       Actor *m = InstanceIDToActor(id);
       m->GetComponent<Fluid>()->preventFlowing = true;
@@ -222,5 +223,5 @@ void setAsFluidBlocker(const variant<int, vector<int>> &IDs) {
     for (int id : get<vector<int>>(IDs)) {
       solidifyMesh(id);
     }
-  }
+  } */
 }

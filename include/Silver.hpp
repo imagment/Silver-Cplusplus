@@ -50,7 +50,6 @@ using World = std::unordered_map<int, std::shared_ptr<Actor>>;
 extern Rect StageArea;
 extern std::map<std::string, Actor> Prefabs; // A collection to store pre-made objects
 extern World Workspace;
-extern World KilledSprites;
 
 extern bool debugMode;
 
@@ -115,8 +114,6 @@ public:
     setShape(newShape);
     cleanShape = newShape;
     pivot = newPivot;
-
-
   }
 
   // Constructor with shape, pivot, and relative pivot flag
@@ -126,8 +123,6 @@ public:
     cleanShape = newShape;
     if(!useRelative) pivot = newPivot;
     else pivotFactor = newPivot;  // Default pivot factor
-
-    
   }
 
   // Constructor with shape, pivot, transparency, markdown, and color
@@ -140,14 +135,12 @@ public:
     isTransparent = transparent;
     useMarkdown = markdown;
     spriteColor = newColor;
-
-    
   }
   
   explicit SpriteRenderer(Actor* parent) : Component(parent) {}
   std::string getShape();
   void setShape(std::string target);
-  
+  void alignShapeTo(double align);
   bool useRelativePivot = false;
   Vector2 pivot = Vector2(0, 0);
   Vector2 pivotFactor = Vector2(0.5, 0.5);
@@ -364,7 +357,6 @@ T *AddComponent(std::shared_ptr<T> component) {
   // Get the child Actores
   const std::vector<std::shared_ptr<Actor> > &GetChildren() const { return children; }
 
-  unsigned int number = 0;
   std::map<std::string, int> intValues;
   std::map<std::string, std::string> stringValues;
   std::string tag;
@@ -386,47 +378,6 @@ private:
   std::vector<std::shared_ptr<Actor> > children;
 };
 
-class Animation {
-public:
-
-  std::vector<std::string> animation;
-  void LoadAnimationFromFile(const std::string filename);
-  double fps;
-  int transition;
-  bool immediateTransition;
-};
-
-class AnimationManager : public Component {
-public:
-AnimationManager() = default;
-    AnimationManager(Animation* anim) : playing(anim), nextUp(nullptr), currentFrame(0) {}
-    AnimationManager(const AnimationManager& other) { *this = other; }
-    
-    AnimationManager& operator=(const AnimationManager& other) {
-        if (this != &other) {
-            playing = other.playing;
-            nextUp = other.nextUp;
-            currentFrame = other.currentFrame;
-        }
-        return *this;
-    }
-
-    std::shared_ptr<Component> Clone() const override {
-        return std::make_shared<AnimationManager>(*this); // Deep copy
-    }
-    
-
-  void SwitchAnimation(Animation* anim);
-  void StopAnimation();
-  void PauseAnimation();
-  void ResumeAnimation();
-  
-  void Update(float deltaTime);
-private:
-  Animation* playing = nullptr;
-  Animation* nextUp = nullptr;
-  int currentFrame = 0;
-};
 
 #include "SilverCamera.hpp"
 

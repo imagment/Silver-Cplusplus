@@ -1,4 +1,4 @@
-#include "Silver.hpp"
+#include "SilverAnimation.hpp"
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -59,26 +59,4 @@ void Animation::LoadAnimationFromFile(const string filename) {
   this->animation = animationFrames;
   this->fps = fps;
   this->transition = transition;
-}
-
-void AnimationManager::Update() {
-  static double elapsedTime = 0.0f;
-  double interval = 1000 / playing->fps;
-  elapsedTime += DeltaTime();
-  if(interval > elapsedTime) elapsedTime = 0.0f;
-  else return;
-  
-  SpriteRenderer* spriteRenderer = parent->GetComponent<SpriteRenderer>();
-  if(spriteRenderer != nullptr) {
-    spriteRenderer->setShape(playing->animation[currentFrame]);
-    
-    if(nextUp != nullptr && (currentFrame==playing->transition || playing->immediateTransition)) {
-      playing = nextUp;
-      nextUp = nullptr;
-      currentFrame=0;
-    } 
-    
-    currentFrame++;
-    currentFrame%=playing->animation.size();
-  }
 }
