@@ -37,7 +37,7 @@ atomic<bool> keepListening(true);
 
 mutex keyMutex;
 World Workspace;
-World killedSprites;
+
 const World emptyWorld;
 std::map<std::string, Actor> Prefabs;
 
