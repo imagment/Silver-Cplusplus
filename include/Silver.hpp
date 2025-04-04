@@ -381,36 +381,6 @@ private:
 
 #include "SilverCamera.hpp"
 
-/*
-class Fluid : public Component {
-public:
- std::shared_ptr<Component> Clone() const override {
-        return std::make_shared<Fluid>(*this); // Deep copy
-    }
-  Fluid(bool isFluid, double diffusionSpeed, int maximumDistance, bool preventFlowing,
-          int fluidDepth, int fluidRoot, int fluidParent, double drySpeed, bool isDead)
-        : isFluid(isFluid), diffusionSpeed(diffusionSpeed), maximumDistance(maximumDistance),
-          preventFlowing(preventFlowing), fluidDepth(fluidDepth), fluidRoot(fluidRoot),
-          fluidParent(fluidParent), drySpeed(drySpeed), isDead(isDead) {}
-
-    Fluid(const Fluid& other) { *this = other; }
-  double diffusionSpeed = 1.0;
-  int maximumDistance = 5;
-  bool preventFlowing = false;
-  int fluidDepth = 0;
-  int fluidRoot = -1;
-  int fluidParent = -1;
-  double drySpeed = 100.0;
-  bool isDead = false;
-  void Update() {
-    ThreadedFlow(parent->GetInstanceID());
-    globalCullingThread(parent->GetInstanceID());
-  }
-private:
-  void globalCullingThread(int rootID);
-  void ThreadedFlow(int rootID);
-};
-*/
 
 class UI : public Component {
 public:
