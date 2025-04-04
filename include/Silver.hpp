@@ -381,6 +381,7 @@ private:
 
 #include "SilverCamera.hpp"
 
+<<<<<<< HEAD
 /*
 class Fluid : public Component {
 public:
@@ -411,6 +412,8 @@ private:
   void ThreadedFlow(int rootID);
 };
 */
+=======
+>>>>>>> dev
 
 class UI : public Component {
 public:
@@ -432,7 +435,11 @@ public:
 };
 
 std::vector<int> Duplicate(const std::variant<int, std::vector<int>> &IDs);
+<<<<<<< HEAD
 void setNonBlockingMode(bool value);
+=======
+void SetNonBlockingMode();
+>>>>>>> dev
 std::shared_ptr<Actor> InstanceIDToActor(int objID);
 
 
