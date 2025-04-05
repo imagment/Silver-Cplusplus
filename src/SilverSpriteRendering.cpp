@@ -367,5 +367,18 @@ void SpriteRenderer::setShape(std::string target) {
   ansiExtracted = ExtractAnsi(shape);
 }
 
+void SpriteRenderer::alignShapeTo(double align) {
+    if (align < 0.0) align = 0.0;
+    if (align > 1.0) align = 1.0;
 
+    std::stringstream alignedShape;
+    std::string line;
+    std::stringstream ss(cleanShape);
     
+    while (std::getline(ss, line, '\n')) {
+        int padding = static_cast<int>((spriteWidth - line.size()) * align);
+        alignedShape << std::string(padding, ' ') << line << '\n';
+    }
+    
+    cleanShape = alignedShape.str();
+}
