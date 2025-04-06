@@ -30,14 +30,22 @@
 
 using namespace std;
 
+<<<<<<< HEAD
+=======
 mutex scriptMutex;
+>>>>>>> dev
 unordered_set<string> currentPressedKeys;
 unordered_set<string> previousPressedKeys;
 atomic<bool> keepListening(true);
 
+<<<<<<< HEAD
+World Workspace;
+World killedSprites;
+=======
 mutex keyMutex;
 World Workspace;
 
+>>>>>>> dev
 const World emptyWorld;
 std::map<std::string, Actor> Prefabs;
 
@@ -764,6 +772,8 @@ std::shared_ptr<Actor> FindObjectWithTag(const string tag) {
 
   return nullptr;
 }
+<<<<<<< HEAD
+=======
 
 void SetNonBlockingMode() {
   const char *devicePath = "/dev/input/event0";
@@ -796,3 +806,4 @@ vector<int> Duplicate(const variant<int, vector<int>> &IDs) {
 
   return duplicatedIDs;
 }
+>>>>>>> dev

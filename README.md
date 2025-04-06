@@ -31,8 +31,13 @@ cmake ..
 make
 ```
 **Important: Compatibility Information** <br>
+<<<<<<< HEAD
+Silver C++ is only compatible with **Linux-based** operating systems. <br>
+Windows is *not* supported currently. We are creating another version of Silver C++ that supports Windows.
+=======
 **Silver C++** is compatible with both **Linux-based** and **Windows-based** operating systems.
 For **Windows** users, you can use the [Silver Windows Edition](https://github.com/imagment/Silver-Windows-Edition/tree/dev). 
+>>>>>>> dev
 
 ## Features  
 - ❌ **No external dependencies** - All required libraries are included into Silver C++
