@@ -367,18 +367,51 @@ void SpriteRenderer::setShape(std::string target) {
   ansiExtracted = ExtractAnsi(shape);
 }
 
-void SpriteRenderer::alignShapeTo(double align) {
-    if (align < 0.0) align = 0.0;
-    if (align > 1.0) align = 1.0;
 
-    std::stringstream alignedShape;
-    std::string line;
-    std::stringstream ss(cleanShape);
-    
-    while (std::getline(ss, line, '\n')) {
-        int padding = static_cast<int>((spriteWidth - line.size()) * align);
-        alignedShape << std::string(padding, ' ') << line << '\n';
+void SpriteRenderer::alignShapeTo(double align) {
+    align = std::clamp(align, 0.0, 1.0);
+
+    int spriteWidth = 0;
+    {
+        std::stringstream temp(cleanShape);
+        std::string line;
+        while (std::getline(temp, line, '\n')) {
+            spriteWidth = std::max(spriteWidth, static_cast<int>(line.size()));
+        }
     }
-    
-    cleanShape = alignedShape.str();
+
+    std::stringstream alignedClean;
+    std::vector<std::vector<std::string>> alignedAnsi;
+
+    {
+        std::stringstream shapeStream(cleanShape);
+        std::string line;
+        size_t lineIndex = 0;
+
+        while (std::getline(shapeStream, line, '\n')) {
+            int padding = static_cast<int>((spriteWidth - line.size()) * align);
+            alignedClean << std::string(padding, ' ') << line << '\n';
+
+            if (lineIndex < ansiExtracted.size()) {
+                const std::vector<std::string>& ansiLine = ansiExtracted[lineIndex];
+                std::vector<std::string> paddedAnsi;
+
+                // Add empty strings as padding on the left
+                paddedAnsi.resize(padding, "");
+
+                // Copy original line
+                paddedAnsi.insert(paddedAnsi.end(), ansiLine.begin(), ansiLine.end());
+
+                alignedAnsi.push_back(std::move(paddedAnsi));
+            }
+
+            ++lineIndex;
+        }
+    }
+
+    cleanShape = alignedClean.str();
+    ss = std::stringstream(cleanShape);
+    ansiExtracted = std::move(alignedAnsi);
 }
+
+
