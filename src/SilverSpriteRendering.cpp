@@ -132,7 +132,7 @@ Vector2 SpriteRenderer::GetSize() {
 
 
 
-Vector2 SpriteRenderer::RotatePoint(int column, int line) {
+Vector2 SpriteRenderer::RotatePoint(double column, double line) {
   Vector2 pivot = this->GetPivot();
   int height = 0, width = 0;
   
@@ -355,16 +355,59 @@ std::string SpriteRenderer::getShape() {
 void SpriteRenderer::setShape(std::string target) {
   shape = target;
   cleanShape = StripAnsi(ProcessMarkdown(shape));
-  spriteHeight = 0;
-  spriteWidth = 0;
-  std::string line;
+  
   ss.str(cleanShape);
-  while (std::getline(ss, line, '\n')) {
-      spriteHeight++;
-      spriteWidth = std::max(spriteWidth, static_cast<int>(line.size()));
-  }
+  ansiExtracted = ExtractAnsi(ProcessMarkdown(shape));
+  
+  Vector2 size = GetSize();
+  spriteHeight = size.y;
+  spriteWidth = size.x;
+}
 
-  ansiExtracted = ExtractAnsi(shape);
+void SpriteRenderer::alignShapeTo(double align) {
+    align = std::clamp(align, 0.0, 1.0);
+
+    int spriteWidth = 0;
+    {
+        std::stringstream temp(cleanShape);
+        std::string line;
+        while (std::getline(temp, line, '\n')) {
+            spriteWidth = std::max(spriteWidth, static_cast<int>(line.size()));
+        }
+    }
+
+    std::stringstream alignedClean;
+    std::vector<std::vector<std::string>> alignedAnsi;
+
+    {
+        std::stringstream shapeStream(cleanShape);
+        std::string line;
+        size_t lineIndex = 0;
+
+        while (std::getline(shapeStream, line, '\n')) {
+            int padding = static_cast<int>((spriteWidth - line.size()) * align);
+            alignedClean << std::string(padding, ' ') << line << '\n';
+
+            if (lineIndex < ansiExtracted.size()) {
+                const std::vector<std::string>& ansiLine = ansiExtracted[lineIndex];
+                std::vector<std::string> paddedAnsi;
+
+                // Add empty strings as padding on the left
+                paddedAnsi.resize(padding, "");
+
+                // Copy original line
+                paddedAnsi.insert(paddedAnsi.end(), ansiLine.begin(), ansiLine.end());
+
+                alignedAnsi.push_back(std::move(paddedAnsi));
+            }
+
+            ++lineIndex;
+        }
+    }
+
+    cleanShape = alignedClean.str();
+    ss = std::stringstream(cleanShape);
+    ansiExtracted = std::move(alignedAnsi);
 }
 
 
