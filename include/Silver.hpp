@@ -34,6 +34,7 @@
 
 #define SPActor std::shared_ptr<Actor>
 
+
 #define until(condition)                                                       \
   {                                                                            \
     while (1) {                                                                \
@@ -103,9 +104,9 @@ public:
   SpriteRenderer() {};
   explicit SpriteRenderer(std::string newShape) {
     setShape(newShape);
-    cleanShape = newShape;
+    
 
-    useRelativePivot = false;
+    useRelativePivot = true;
     pivotFactor = Vector2(0.5f, 0.5f);  // Default pivot factor
   }
 
@@ -120,7 +121,7 @@ public:
   SpriteRenderer(bool useRelative, Vector2 newPivot, std::string newShape) {
     useRelativePivot = useRelative;
     setShape(newShape);
-    cleanShape = newShape;
+    
     if(!useRelative) pivot = newPivot;
     else pivotFactor = newPivot;  // Default pivot factor
   }
@@ -128,7 +129,7 @@ public:
   // Constructor with shape, pivot, transparency, markdown, and color
   SpriteRenderer(bool useRelative, Vector2 newPivot, std::string newShape, bool transparent, bool markdown, Color newColor) {
     useRelativePivot = useRelative;
-    shape = newShape;
+
     setShape(newShape);
     if(!useRelative) pivot = newPivot;
     else pivotFactor = newPivot;  // Default pivot factor
@@ -141,7 +142,7 @@ public:
   std::string getShape();
   void setShape(std::string target);
   void alignShapeTo(double align);
-  bool useRelativePivot = false;
+  bool useRelativePivot = true;
   Vector2 pivot = Vector2(0, 0);
   Vector2 pivotFactor = Vector2(0.5, 0.5);
   
@@ -198,12 +199,13 @@ public:
   void Update(float deltaTime) override {
     
   }
+  double spriteHeight;
+  double spriteWidth;
 private:
-  Vector2 RotatePoint(int column, int line); //Helper function to rotate around the pivot
+  Vector2 RotatePoint(double column, double line); // Helper function to rotate around the pivot
   std::string shape = "";
   std::string cleanShape = "";
-  int spriteHeight = 0;
-  int spriteWidth = 0;
+  
   std::stringstream ss;
   std::vector<std::vector<std::string>> ansiExtracted;
 };
@@ -381,39 +383,6 @@ private:
 
 #include "SilverCamera.hpp"
 
-<<<<<<< HEAD
-/*
-class Fluid : public Component {
-public:
- std::shared_ptr<Component> Clone() const override {
-        return std::make_shared<Fluid>(*this); // Deep copy
-    }
-  Fluid(bool isFluid, double diffusionSpeed, int maximumDistance, bool preventFlowing,
-          int fluidDepth, int fluidRoot, int fluidParent, double drySpeed, bool isDead)
-        : isFluid(isFluid), diffusionSpeed(diffusionSpeed), maximumDistance(maximumDistance),
-          preventFlowing(preventFlowing), fluidDepth(fluidDepth), fluidRoot(fluidRoot),
-          fluidParent(fluidParent), drySpeed(drySpeed), isDead(isDead) {}
-
-    Fluid(const Fluid& other) { *this = other; }
-  double diffusionSpeed = 1.0;
-  int maximumDistance = 5;
-  bool preventFlowing = false;
-  int fluidDepth = 0;
-  int fluidRoot = -1;
-  int fluidParent = -1;
-  double drySpeed = 100.0;
-  bool isDead = false;
-  void Update() {
-    ThreadedFlow(parent->GetInstanceID());
-    globalCullingThread(parent->GetInstanceID());
-  }
-private:
-  void globalCullingThread(int rootID);
-  void ThreadedFlow(int rootID);
-};
-*/
-=======
->>>>>>> dev
 
 class UI : public Component {
 public:
@@ -435,11 +404,8 @@ public:
 };
 
 std::vector<int> Duplicate(const std::variant<int, std::vector<int>> &IDs);
-<<<<<<< HEAD
+
 void setNonBlockingMode(bool value);
-=======
-void SetNonBlockingMode();
->>>>>>> dev
 std::shared_ptr<Actor> InstanceIDToActor(int objID);
 
 

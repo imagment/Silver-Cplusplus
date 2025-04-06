@@ -38,6 +38,7 @@ std::vector<std::vector<std::string>> ExtractAnsi(const std::string& input) {
                     activeAnsi.clear(); // Reset ANSI codes
                 } else {
                     activeAnsi += sequence; // Append to active ANSI state
+                    Debug("fuck");
                 }
                 i = end; // Move past the escape sequence
             }
@@ -81,8 +82,10 @@ Vector2 SpriteRenderer::GetSize() {
     
     std::string line;
     while (std::getline(ss, line, '\n')) {
-        height++;
-        width = std::max(width, static_cast<int>(line.size()));
+      height++;
+      int currentWidth = static_cast<int>(line.size());
+      std::cout << "Current line width: " << currentWidth << std::endl;  // Debug
+      width = std::max(width, currentWidth);
     }
 
     // Edge case: Empty shape
@@ -92,8 +95,9 @@ Vector2 SpriteRenderer::GetSize() {
 
     Vector2 pivot = this->GetPivot();
     if (useRelativePivot) {
-        pivot = Vector2(static_cast<int>(std::round(this->pivotFactor.x * width)),
-                        static_cast<int>(std::round(this->pivotFactor.y * height)));
+        pivot = Vector2(this->pivotFactor.x * width,
+                this->pivotFactor.y * height);
+
     }
 
     // Apply scaling before rotation
@@ -132,35 +136,41 @@ Vector2 SpriteRenderer::GetSize() {
 
 
 
-Vector2 SpriteRenderer::RotatePoint(int column, int line) {
-  Vector2 pivot = this->GetPivot();
-  int height = 0, width = 0;
-  
-  std::string l;
-  while (std::getline(ss, l, '\n')) {
-      height++;
-      width = std::max(width, static_cast<int>(l.size()));
-  }
-  if(useRelativePivot) pivot = Vector2(static_cast<int>(std::round(this->pivotFactor.x * width)), static_cast<int>(std::round(this->pivotFactor.y * height)));
-    
-  auto transform = (parent->GetComponent<Transform>());
+Vector2 SpriteRenderer::RotatePoint(double column, double line) {
+    Vector2 pivot = this->GetPivot();
+    int height = 0, width = 0;
 
-  double rotation = transform->rotation;
-  // Calculate local coordinates relative to the pivot
-  int localX = column - pivot.x;
-  int localY = line - pivot.y;
+    std::string l;
+    while (std::getline(ss, l, '\n')) {
+        height++;
+        width = std::max(width, static_cast<int>(l.size()));
+    }
+    if (useRelativePivot) {
+        pivot = Vector2(
+            static_cast<int>(std::round(this->pivotFactor.x * width)),
+            static_cast<int>(std::round(this->pivotFactor.y * height))
+        );
+    }
 
-  // Apply clockwise rotation (negative angle for clockwise rotation)
-  double radians = rotation * (M_PI / 180.0f); // Negative for clockwise
-  int rotatedX = round(localX * cos(radians) - localY * sin(radians));
-  int rotatedY = round(localX * sin(radians) + localY * cos(radians));
+    auto transform = (parent->GetComponent<Transform>());
+    double rotation = transform->rotation;
 
-  // Re-adjust for the pivot's fixed position after transformation
-  rotatedX += pivot.x;
-  rotatedY += pivot.y;
+    // Relative position to pivot (in double)
+    double localX = column - pivot.x;
+    double localY = line - pivot.y;
 
-  return Vector2(rotatedX, rotatedY);
+    // Rotation (clockwise)
+    double radians = rotation * (M_PI / 180.0);
+    double rotatedX = localX * cos(radians) - localY * sin(radians);
+    double rotatedY = localX * sin(radians) + localY * cos(radians);
+
+    // Add pivot back
+    rotatedX += pivot.x;
+    rotatedY += pivot.y;
+
+    return Vector2(static_cast<int>(std::round(rotatedX)), static_cast<int>(std::round(rotatedY)));
 }
+
 
 std::tuple<int, int, int, int> SpriteRenderer::CalculatePivotExpansion() {
     Vector2 pivot = this->GetPivot();
@@ -175,8 +185,8 @@ std::tuple<int, int, int, int> SpriteRenderer::CalculatePivotExpansion() {
     if (useRelativePivot) {
         pivot = Vector2(std::round(this->pivotFactor.x * spriteWidth), std::round(this->pivotFactor.y * spriteHeight));
     }
-
-    Vector2 size((double) spriteWidth, (double) spriteHeight);
+   
+    Vector2 size((double) this->spriteWidth, (double) this->spriteHeight);
 
     // Get rotated corner positions
     Vector2 leftUp = RotatePoint(0, 0);
@@ -219,10 +229,8 @@ std::tuple<int, int, int, int> SpriteRenderer::GetPivotBounds() {
     auto transform = parent->GetComponent<Transform>();
     Vector3 scale = transform->scale;
 
-    
+    Vector2 size=Vector2(spriteWidth, spriteHeight);
 
-    Vector2 size((double)spriteWidth, (double)spriteHeight);
-    
     // Get rotated corner positions
     Vector2 leftUp = RotatePoint(0, 0);
     Vector2 leftDown = RotatePoint(0, size.y - 1);
@@ -355,20 +363,15 @@ std::string SpriteRenderer::getShape() {
 void SpriteRenderer::setShape(std::string target) {
   shape = target;
   cleanShape = StripAnsi(ProcessMarkdown(shape));
-  spriteHeight = 0;
-  spriteWidth = 0;
-  std::string line;
   ss.str(cleanShape);
-  while (std::getline(ss, line, '\n')) {
-      spriteHeight++;
-      spriteWidth = std::max(spriteWidth, static_cast<int>(line.size()));
-  }
-
-  ansiExtracted = ExtractAnsi(shape);
+  Vector2 size = GetSize();
+  this->spriteHeight = size.y;
+  this->spriteWidth = size.x;
+  
+  ansiExtracted = ExtractAnsi(ProcessMarkdown(shape));
 }
 
 
-<<<<<<< HEAD
 void SpriteRenderer::alignShapeTo(double align) {
     if (align < 0.0) align = 0.0;
     if (align > 1.0) align = 1.0;
@@ -385,6 +388,3 @@ void SpriteRenderer::alignShapeTo(double align) {
     cleanShape = alignedShape.str();
 }
 
-=======
-    
->>>>>>> dev

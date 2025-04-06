@@ -17,11 +17,7 @@ static int fd; // File descriptor for input device
 // Initializes the keyboard input system
 void InitializeKeyboardModule() {
   if (!isInitialized) {
-<<<<<<< HEAD
     setNonBlockingMode(true);
-=======
-    SetNonBlockingMode();
->>>>>>> dev
 
     isInitialized = true;
   }

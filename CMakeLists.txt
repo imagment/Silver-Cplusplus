@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Project configuration
-project(Silver VERSION 0.3.6)
+project(Silver VERSION 0.5.1)
 
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
