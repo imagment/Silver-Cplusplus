@@ -410,6 +410,7 @@ void SpriteRenderer::alignShapeTo(double align) {
     ansiExtracted = std::move(alignedAnsi);
 }
 
+
 void SpriteRenderer::alignShapeTo(double align) {
     align = std::clamp(align, 0.0, 1.0);
 
