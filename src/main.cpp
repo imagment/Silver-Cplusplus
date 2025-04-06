@@ -1,16 +1,23 @@
 #include "Silver.hpp"
-#include <chrono>
-#include <iostream>
-#include <thread>
 
 int main() {
-  // Use std::shared_ptr for c1 to ensure shared_from_this works
-  SPActor c1 = std::make_shared<Actor>();
-  c1->AddComponent<Camera>();
-  
-  SPActor test = std::make_shared<Actor>("test", "1");
-  Rectangle(test, Rect(0,0,5,5), 0);
-  c1->GetComponent<Camera>()->RenderFrame();
-  Hold();
-  return 0;
+
+	Actor c1;
+
+	c1.AddComponent<Camera>();
+
+	Actor actor("alert", "Hello World!");
+
+	actor.GetComponent<Transform>()->position = Vector3Zero;
+
+	actor.GetComponent<Transform>()->scale = Vector3(1,1,1);
+
+	actor.AddObject();
+
+	c1.GetComponent<Camera>()->RenderFrame();
+
+	Hold();
+
+	return 0;
+
 }

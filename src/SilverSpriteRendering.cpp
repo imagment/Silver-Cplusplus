@@ -132,7 +132,7 @@ Vector2 SpriteRenderer::GetSize() {
 
 
 
-Vector2 SpriteRenderer::RotatePoint(int column, int line) {
+Vector2 SpriteRenderer::RotatePoint(double column, double line) {
   Vector2 pivot = this->GetPivot();
   int height = 0, width = 0;
   
@@ -355,16 +355,14 @@ std::string SpriteRenderer::getShape() {
 void SpriteRenderer::setShape(std::string target) {
   shape = target;
   cleanShape = StripAnsi(ProcessMarkdown(shape));
-  spriteHeight = 0;
-  spriteWidth = 0;
+  
   std::string line;
   ss.str(cleanShape);
-  while (std::getline(ss, line, '\n')) {
-      spriteHeight++;
-      spriteWidth = std::max(spriteWidth, static_cast<int>(line.size()));
-  }
-
-  ansiExtracted = ExtractAnsi(shape);
+  ansiExtracted = ExtractAnsi(ProcessMarkdown(shape));
+  
+  Vector2 size = GetSize();
+  spriteHeight = size.y;
+  spriteWidth = size.x;
 }
 
 void SpriteRenderer::alignShapeTo(double align) {

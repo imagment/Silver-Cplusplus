@@ -105,7 +105,7 @@ public:
     setShape(newShape);
     cleanShape = newShape;
 
-    useRelativePivot = false;
+    useRelativePivot = true;
     pivotFactor = Vector2(0.5f, 0.5f);  // Default pivot factor
   }
 
@@ -141,7 +141,7 @@ public:
   std::string getShape();
   void setShape(std::string target);
   void alignShapeTo(double align);
-  bool useRelativePivot = false;
+  bool useRelativePivot = true;
   Vector2 pivot = Vector2(0, 0);
   Vector2 pivotFactor = Vector2(0.5, 0.5);
   
@@ -199,7 +199,7 @@ public:
     
   }
 private:
-  Vector2 RotatePoint(int column, int line); //Helper function to rotate around the pivot
+  Vector2 RotatePoint(double column, double line); //Helper function to rotate around the pivot
   std::string shape = "";
   std::string cleanShape = "";
   int spriteHeight = 0;
