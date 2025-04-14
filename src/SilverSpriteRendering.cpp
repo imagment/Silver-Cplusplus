@@ -38,6 +38,7 @@ std::vector<std::vector<std::string>> ExtractAnsi(const std::string& input) {
                     activeAnsi.clear(); // Reset ANSI codes
                 } else {
                     activeAnsi += sequence; // Append to active ANSI state
+                    Debug("fuck");
                 }
                 i = end; // Move past the escape sequence
             }
@@ -81,8 +82,10 @@ Vector2 SpriteRenderer::GetSize() {
     
     std::string line;
     while (std::getline(ss, line, '\n')) {
-        height++;
-        width = std::max(width, static_cast<int>(line.size()));
+      height++;
+      int currentWidth = static_cast<int>(line.size());
+      std::cout << "Current line width: " << currentWidth << std::endl;  // Debug
+      width = std::max(width, currentWidth);
     }
 
     // Edge case: Empty shape
@@ -92,8 +95,9 @@ Vector2 SpriteRenderer::GetSize() {
 
     Vector2 pivot = this->GetPivot();
     if (useRelativePivot) {
-        pivot = Vector2(static_cast<int>(std::round(this->pivotFactor.x * width)),
-                        static_cast<int>(std::round(this->pivotFactor.y * height)));
+        pivot = Vector2(this->pivotFactor.x * width,
+                this->pivotFactor.y * height);
+
     }
 
     // Apply scaling before rotation
@@ -129,7 +133,6 @@ Vector2 SpriteRenderer::GetSize() {
     // Compute final bounding box size
     return Vector2(maxX - minX + 1, maxY - minY + 1);
 }
-
 
 
 Vector2 SpriteRenderer::RotatePoint(double column, double line) {
@@ -175,8 +178,8 @@ std::tuple<int, int, int, int> SpriteRenderer::CalculatePivotExpansion() {
     if (useRelativePivot) {
         pivot = Vector2(std::round(this->pivotFactor.x * spriteWidth), std::round(this->pivotFactor.y * spriteHeight));
     }
-
-    Vector2 size((double) spriteWidth, (double) spriteHeight);
+   
+    Vector2 size((double) this->spriteWidth, (double) this->spriteHeight);
 
     // Get rotated corner positions
     Vector2 leftUp = RotatePoint(0, 0);
@@ -219,10 +222,8 @@ std::tuple<int, int, int, int> SpriteRenderer::GetPivotBounds() {
     auto transform = parent->GetComponent<Transform>();
     Vector3 scale = transform->scale;
 
-    
+    Vector2 size=Vector2(spriteWidth, spriteHeight);
 
-    Vector2 size((double)spriteWidth, (double)spriteHeight);
-    
     // Get rotated corner positions
     Vector2 leftUp = RotatePoint(0, 0);
     Vector2 leftDown = RotatePoint(0, size.y - 1);
@@ -409,5 +410,4 @@ void SpriteRenderer::alignShapeTo(double align) {
     ss = std::stringstream(cleanShape);
     ansiExtracted = std::move(alignedAnsi);
 }
-
 

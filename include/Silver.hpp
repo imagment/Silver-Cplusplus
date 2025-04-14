@@ -34,6 +34,7 @@
 
 #define SPActor std::shared_ptr<Actor>
 
+
 #define until(condition)                                                       \
   {                                                                            \
     while (1) {                                                                \
@@ -103,7 +104,7 @@ public:
   SpriteRenderer() {};
   explicit SpriteRenderer(std::string newShape) {
     setShape(newShape);
-    cleanShape = newShape;
+    
 
     useRelativePivot = true;
     pivotFactor = Vector2(0.5f, 0.5f);  // Default pivot factor
@@ -120,7 +121,7 @@ public:
   SpriteRenderer(bool useRelative, Vector2 newPivot, std::string newShape) {
     useRelativePivot = useRelative;
     setShape(newShape);
-    cleanShape = newShape;
+    
     if(!useRelative) pivot = newPivot;
     else pivotFactor = newPivot;  // Default pivot factor
   }
@@ -128,7 +129,7 @@ public:
   // Constructor with shape, pivot, transparency, markdown, and color
   SpriteRenderer(bool useRelative, Vector2 newPivot, std::string newShape, bool transparent, bool markdown, Color newColor) {
     useRelativePivot = useRelative;
-    shape = newShape;
+
     setShape(newShape);
     if(!useRelative) pivot = newPivot;
     else pivotFactor = newPivot;  // Default pivot factor
@@ -198,12 +199,14 @@ public:
   void Update(float deltaTime) override {
     
   }
+  double spriteHeight;
+  double spriteWidth;
 private:
   Vector2 RotatePoint(double column, double line); //Helper function to rotate around the pivot
+
   std::string shape = "";
   std::string cleanShape = "";
-  int spriteHeight = 0;
-  int spriteWidth = 0;
+  
   std::stringstream ss;
   std::vector<std::vector<std::string>> ansiExtracted;
 };
@@ -402,7 +405,8 @@ public:
 };
 
 std::vector<int> Duplicate(const std::variant<int, std::vector<int>> &IDs);
-void SetNonBlockingMode();
+
+void setNonBlockingMode(bool value);
 std::shared_ptr<Actor> InstanceIDToActor(int objID);
 
 

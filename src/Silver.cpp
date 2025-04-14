@@ -30,12 +30,10 @@
 
 using namespace std;
 
-mutex scriptMutex;
 unordered_set<string> currentPressedKeys;
 unordered_set<string> previousPressedKeys;
 atomic<bool> keepListening(true);
 
-mutex keyMutex;
 World Workspace;
 
 const World emptyWorld;
@@ -763,36 +761,4 @@ std::shared_ptr<Actor> FindObjectWithTag(const string tag) {
   }
 
   return nullptr;
-}
-
-void SetNonBlockingMode() {
-  const char *devicePath = "/dev/input/event0";
-  int fd = open(devicePath, O_RDONLY | O_NONBLOCK); // Open in non-blocking mode
-
-  if (fd < 0) { // Check if the file descriptor is valid
-    perror("Failed to open input device");
-    exit(EXIT_FAILURE); // Exit if the device cannot be opened
-  }
-}
-
-vector<int> Duplicate(const variant<int, vector<int>> &IDs) {
-  vector<int> duplicatedIDs;
-
-  if (holds_alternative<int>(IDs)) {
-    int id = get<int>(IDs);
-
-    nextObjectID++;
-    Workspace[nextObjectID - 1] = Workspace[id];
-    duplicatedIDs.push_back(nextObjectID - 1);
-
-  } else if (holds_alternative<vector<int>>(IDs)) {
-
-    for (int id : get<vector<int>>(IDs)) {
-      nextObjectID++;
-      Workspace[nextObjectID - 1] = Workspace[id];
-      duplicatedIDs.push_back(nextObjectID - 1);
-    }
-  }
-
-  return duplicatedIDs;
 }
