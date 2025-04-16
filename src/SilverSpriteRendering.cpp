@@ -135,42 +135,35 @@ Vector2 SpriteRenderer::GetSize() {
 }
 
 
-
 Vector2 SpriteRenderer::RotatePoint(double column, double line) {
-    Vector2 pivot = this->GetPivot();
-    int height = 0, width = 0;
+  Vector2 pivot = this->GetPivot();
+  int height = 0, width = 0;
+  
+  std::string l;
+  while (std::getline(ss, l, '\n')) {
+      height++;
+      width = std::max(width, static_cast<int>(l.size()));
+  }
+  if(useRelativePivot) pivot = Vector2(static_cast<int>(std::round(this->pivotFactor.x * width)), static_cast<int>(std::round(this->pivotFactor.y * height)));
+    
+  auto transform = (parent->GetComponent<Transform>());
 
-    std::string l;
-    while (std::getline(ss, l, '\n')) {
-        height++;
-        width = std::max(width, static_cast<int>(l.size()));
-    }
-    if (useRelativePivot) {
-        pivot = Vector2(
-            static_cast<int>(std::round(this->pivotFactor.x * width)),
-            static_cast<int>(std::round(this->pivotFactor.y * height))
-        );
-    }
+  double rotation = transform->rotation;
+  // Calculate local coordinates relative to the pivot
+  int localX = column - pivot.x;
+  int localY = line - pivot.y;
 
-    auto transform = (parent->GetComponent<Transform>());
-    double rotation = transform->rotation;
+  // Apply clockwise rotation (negative angle for clockwise rotation)
+  double radians = rotation * (M_PI / 180.0f); // Negative for clockwise
+  int rotatedX = round(localX * cos(radians) - localY * sin(radians));
+  int rotatedY = round(localX * sin(radians) + localY * cos(radians));
 
-    // Relative position to pivot (in double)
-    double localX = column - pivot.x;
-    double localY = line - pivot.y;
+  // Re-adjust for the pivot's fixed position after transformation
+  rotatedX += pivot.x;
+  rotatedY += pivot.y;
 
-    // Rotation (clockwise)
-    double radians = rotation * (M_PI / 180.0);
-    double rotatedX = localX * cos(radians) - localY * sin(radians);
-    double rotatedY = localX * sin(radians) + localY * cos(radians);
-
-    // Add pivot back
-    rotatedX += pivot.x;
-    rotatedY += pivot.y;
-
-    return Vector2(static_cast<int>(std::round(rotatedX)), static_cast<int>(std::round(rotatedY)));
+  return Vector2(rotatedX, rotatedY);
 }
-
 
 std::tuple<int, int, int, int> SpriteRenderer::CalculatePivotExpansion() {
     Vector2 pivot = this->GetPivot();
@@ -363,28 +356,58 @@ std::string SpriteRenderer::getShape() {
 void SpriteRenderer::setShape(std::string target) {
   shape = target;
   cleanShape = StripAnsi(ProcessMarkdown(shape));
-  ss.str(cleanShape);
-  Vector2 size = GetSize();
-  this->spriteHeight = size.y;
-  this->spriteWidth = size.x;
   
+  ss.str(cleanShape);
   ansiExtracted = ExtractAnsi(ProcessMarkdown(shape));
+  
+  Vector2 size = GetSize();
+  spriteHeight = size.y;
+  spriteWidth = size.x;
 }
 
-
 void SpriteRenderer::alignShapeTo(double align) {
-    if (align < 0.0) align = 0.0;
-    if (align > 1.0) align = 1.0;
+    align = std::clamp(align, 0.0, 1.0);
 
-    std::stringstream alignedShape;
-    std::string line;
-    std::stringstream ss(cleanShape);
-    
-    while (std::getline(ss, line, '\n')) {
-        int padding = static_cast<int>((spriteWidth - line.size()) * align);
-        alignedShape << std::string(padding, ' ') << line << '\n';
+    int spriteWidth = 0;
+    {
+        std::stringstream temp(cleanShape);
+        std::string line;
+        while (std::getline(temp, line, '\n')) {
+            spriteWidth = std::max(spriteWidth, static_cast<int>(line.size()));
+        }
     }
-    
-    cleanShape = alignedShape.str();
+
+    std::stringstream alignedClean;
+    std::vector<std::vector<std::string>> alignedAnsi;
+
+    {
+        std::stringstream shapeStream(cleanShape);
+        std::string line;
+        size_t lineIndex = 0;
+
+        while (std::getline(shapeStream, line, '\n')) {
+            int padding = static_cast<int>((spriteWidth - line.size()) * align);
+            alignedClean << std::string(padding, ' ') << line << '\n';
+
+            if (lineIndex < ansiExtracted.size()) {
+                const std::vector<std::string>& ansiLine = ansiExtracted[lineIndex];
+                std::vector<std::string> paddedAnsi;
+
+                // Add empty strings as padding on the left
+                paddedAnsi.resize(padding, "");
+
+                // Copy original line
+                paddedAnsi.insert(paddedAnsi.end(), ansiLine.begin(), ansiLine.end());
+
+                alignedAnsi.push_back(std::move(paddedAnsi));
+            }
+
+            ++lineIndex;
+        }
+    }
+
+    cleanShape = alignedClean.str();
+    ss = std::stringstream(cleanShape);
+    ansiExtracted = std::move(alignedAnsi);
 }
 

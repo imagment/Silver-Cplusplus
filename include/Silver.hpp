@@ -202,7 +202,8 @@ public:
   double spriteHeight;
   double spriteWidth;
 private:
-  Vector2 RotatePoint(double column, double line); // Helper function to rotate around the pivot
+  Vector2 RotatePoint(double column, double line); //Helper function to rotate around the pivot
+
   std::string shape = "";
   std::string cleanShape = "";
   
