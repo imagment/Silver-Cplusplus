@@ -33,7 +33,6 @@ make
 **Important: Compatibility Information** <br>
 **Silver C++** is compatible with both **Linux-based** and **Windows-based** operating systems.
 For **Windows** users, you can use the [Silver Windows Edition](https://github.com/imagment/Silver-Windows-Edition/tree/dev). 
->>>>>>> dev
 
 ## Features  
 - ❌ **No external dependencies** - All required libraries are included into Silver C++
