@@ -157,9 +157,8 @@ void Camera::RenderFrame() {
   if (consoleWidth > maxLeftWidth + maxRightWidth + cameraScale.x) cameraScale -= maxLeftWidth + maxRightWidth;
   if (consoleHeight > topTextLinesCount + bottomTextLinesCount + cameraScale.y) cameraScale -= topTextLinesCount + bottomTextLinesCount;
     
-  
-  if (cameraScale.x == 0 || cameraScale.y == 0 ||
-      cameraScale.z == 0)
+  if(!cameraScale.z) cameraScale.z = 1;
+  if (cameraScale.x == 0 || cameraScale.y == 0)
     return;
     
   // Detect console scale changes
@@ -271,8 +270,9 @@ void Camera::RenderFrame() {
         cameraScale.z == 0)
       continue;
       
-    if (scale.x == 0.0f || scale.y == 0.0f || scale.z == 0.0f) continue;
-      
+    if (scale.x == 0.0f || scale.y == 0.0f) continue;
+    if(scale.z == 0.0f) scale.z = 1;
+    
     // Check if the object is part of UI or SpriteRenderer
     if (obj->GetComponent<UI>() != nullptr) {
         location.x = round(obj->GetComponent<Transform>()->position.x + position.x - abs(cameraScale.x) / 2);
